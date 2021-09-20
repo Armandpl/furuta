@@ -1,0 +1,3 @@
+[submodule "gym-cartpole-swingup"]
+	path = gym-cartpole-swingup
+	url = git@github.com:Armandpl/gym-cartpole-swingup.git
