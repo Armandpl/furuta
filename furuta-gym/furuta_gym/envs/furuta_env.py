@@ -5,8 +5,8 @@ import numpy as np
 import gym
 from gym import spaces
 
-from motor import Motor
-from LS7366R import LS7366R
+from .hardware.motor import Motor
+from .hardware.LS7366R import LS7366R
 
 
 class FurutaEnv(gym.Env):
@@ -87,6 +87,7 @@ class FurutaEnv(gym.Env):
     def reset(self):
         self.steps_taken = 0
 
+        # reset motor
         while True:
             motor_angle = self.get_observation()[1]
 
@@ -108,11 +109,12 @@ class FurutaEnv(gym.Env):
             elif motor_angle < -90:
                 self.motor.set_speed(-speed)
 
+        # wait for pendulum to reset to start position
         count = 0
         while True:
             pendulum_angle = self.get_observation()[0]
 
-            if abs(pendulum_angle) < 5:
+            if abs(pendulum_angle) > 175:
                 count += 1
             else:
                 count = 0
