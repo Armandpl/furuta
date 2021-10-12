@@ -22,7 +22,8 @@ class Motor():
         elif speed < 0:
             self.set_direction(-1)
 
-        self.pwm.ChangeDutyCycle(abs(speed))
+        speed = abs(speed)*100.0
+        self.pwm.ChangeDutyCycle(speed)
 
     def set_direction(self, direction):
         if direction == -1:
