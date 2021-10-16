@@ -8,6 +8,8 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 
+from time import sleep
+
 import argparse
 from distutils.util import strtobool
 import collections
@@ -20,6 +22,7 @@ import random
 import os
 
 import furuta_gym
+import gym_cartpole_swingup        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='TD3 agent')
@@ -38,7 +41,7 @@ if __name__ == "__main__":
                         help='total timesteps of the experiments')
     parser.add_argument('--torch-deterministic', type=lambda x:bool(strtobool(x)), default=False, nargs='?', const=True,
                         help='if toggled, `torch.backends.cudnn.deterministic=False`')
-    parser.add_argument('--cuda', type=lambda x:bool(strtobool(x)), default=False, nargs='?', const=True,
+    parser.add_argument('--cuda', type=lambda x:bool(strtobool(x)), default=True, nargs='?', const=True,
                         help='if toggled, cuda will not be enabled by default')
     parser.add_argument('--track', type=lambda x:bool(strtobool(x)), default=True, nargs='?', const=True,
                         help='run the script in production mode and use wandb to log outputs')
@@ -48,15 +51,7 @@ if __name__ == "__main__":
                         help="the wandb's project name")
     parser.add_argument('--wandb-entity', type=str, default=None,
                         help="the entity (team) of wandb's project")
-    parser.add_argument('--model-artifact', type=str, default=None,
-                        help="the artifact version of the model to load")
 
-    # model args/perf args
-    parser.add_argument('--neurons', type=int, default=256,
-                         help='hidden layer size for the networks')
-    parser.add_argument('--dt', type=float, default=0.05,
-                         help='control frequency')
-    
     # Algorithm specific arguments
     parser.add_argument('--buffer-size', type=int, default=int(1e6),
                          help='the replay memory buffer size')
@@ -70,14 +65,25 @@ if __name__ == "__main__":
                         help="the batch size of sample from the reply memory")
     parser.add_argument('--policy-noise', type=float, default=0.2,
                         help='the scale of policy noise')
-    parser.add_argument('--exploration-noise', type=float, default=0.2,
+    parser.add_argument('--exploration-noise', type=float, default=0.1,
                         help='the scale of exploration noise')
     parser.add_argument('--learning-starts', type=int, default=25e3,
                         help="timestep to start learning")
-    parser.add_argument('--policy-frequency', type=int, default=2,
+    parser.add_argument('--policy-frequency', type=int, default=2, # relative to training frequency
                         help="the frequency of training policy (delayed)")
     parser.add_argument('--noise-clip', type=float, default=0.5,
                          help='noise clip parameter of the Target Policy Smoothing Regularization')
+
+    # params to accomodate embedded system
+    parser.add_argument('--model-artifact', type=str, default=None,
+                        help="the artifact version of the model to load")
+    parser.add_argument('--neurons', type=int, default=256,
+                         help='hidden layer size for the networks')
+    parser.add_argument('--dt', type=float, default=0.01,
+                         help='control frequency')
+    parser.add_argument('--training-frequency', type=int, default=1500, # = 15 sec at 100hz
+                        help="the frequency of training critics/q functions")
+
     args = parser.parse_args()
     if not args.seed:
         args.seed = int(time.time())
@@ -95,7 +101,10 @@ if args.track:
 
 # TRY NOT TO MODIFY: seeding
 device = torch.device('cuda' if torch.cuda.is_available() and args.cuda else 'cpu')
-env = gym.make(args.gym_id, dt=args.dt)
+if args.gym_id == "Furuta-v0":
+    env = gym.make(args.gym_id, dt=args.dt)
+else:
+    env = gym.make(args.gym_id)
 random.seed(args.seed)
 np.random.seed(args.seed)
 torch.manual_seed(args.seed)
@@ -171,6 +180,8 @@ rb = ReplayBuffer(args.buffer_size)
 actor = Actor(env).to(device)
 qf1 = QNetwork(env).to(device)
 qf2 = QNetwork(env).to(device)
+
+# loading model
 if args.model_artifact is not None:
     print(f"loading model from Artifacts, version {args.model_artifact}")
     artifact = wandb.use_artifact(f"td3_model:{args.model_artifact}")
@@ -188,6 +199,7 @@ qf2_target.load_state_dict(qf2.state_dict())
 q_optimizer = optim.Adam(list(qf1.parameters()) + list(qf2.parameters()), lr=args.learning_rate)
 actor_optimizer = optim.Adam(list(actor.parameters()), lr=args.learning_rate)
 loss_fn = nn.MSELoss()
+
 # TRY NOT TO MODIFY: start the game
 obs = env.reset()
 episode_reward = 0
@@ -209,59 +221,74 @@ try:
         next_obs, reward, done, info = env.step(action)
         episode_reward += reward
 
-        if done:
-            tmp_obs = env.reset() # reset asap to kill motor. 
-        
         # ALGO LOGIC: training.
         rb.put((obs, action, reward, next_obs, done))
-        if global_step > args.learning_starts:
-            s_obs, s_actions, s_rewards, s_next_obses, s_dones = rb.sample(args.batch_size)
-            with torch.no_grad():
-                clipped_noise = (
-                    torch.randn_like(torch.Tensor(action)) * args.policy_noise
-                ).clamp(-args.noise_clip, args.noise_clip)
 
-                next_state_actions = (
-                    target_actor.forward(s_next_obses, device) + clipped_noise.to(device)
-                ).clamp(env.action_space.low[0], env.action_space.high[0])
-                qf1_next_target = qf1_target.forward(s_next_obses, next_state_actions, device)
-                qf2_next_target = qf2_target.forward(s_next_obses, next_state_actions, device)
-                min_qf_next_target = torch.min(qf1_next_target, qf2_next_target)
-                next_q_value = torch.Tensor(s_rewards).to(device) + (1 - torch.Tensor(s_dones).to(device)) * args.gamma * (min_qf_next_target).view(-1)
+        # we use tmp_obs = None to know if we should run env.reset or not
+        tmp_obs = None
+        if global_step > args.learning_starts and global_step % args.training_frequency == 0:
+            # terminate current episode 
+            done = True
+            tmp_obs = env.reset()
 
-            qf1_a_values = qf1.forward(s_obs, torch.Tensor(s_actions).to(device), device).view(-1)
-            qf2_a_values = qf2.forward(s_obs, torch.Tensor(s_actions).to(device), device).view(-1)
-            qf1_loss = loss_fn(qf1_a_values, next_q_value)
-            qf2_loss = loss_fn(qf2_a_values, next_q_value)
+            # train for the past X timestep
+            print("learning")
+            for i in range(args.training_frequency):
+                s_obs, s_actions, s_rewards, s_next_obses, s_dones = rb.sample(args.batch_size)
+                with torch.no_grad():
+                    clipped_noise = (
+                        torch.randn_like(torch.Tensor(action)) * args.policy_noise
+                    ).clamp(-args.noise_clip, args.noise_clip)
 
-            # optimize the model
-            q_optimizer.zero_grad()
-            qf1_loss.backward()
-            qf2_loss.backward()
-            nn.utils.clip_grad_norm_(list(qf1.parameters())+list(qf2.parameters()), args.max_grad_norm)
-            q_optimizer.step()
+                    next_state_actions = (
+                        target_actor.forward(s_next_obses, device) + clipped_noise.to(device)
+                    ).clamp(env.action_space.low[0], env.action_space.high[0])
+                    qf1_next_target = qf1_target.forward(s_next_obses, next_state_actions, device)
+                    qf2_next_target = qf2_target.forward(s_next_obses, next_state_actions, device)
+                    min_qf_next_target = torch.min(qf1_next_target, qf2_next_target)
+                    next_q_value = torch.Tensor(s_rewards).to(device) + (1 - torch.Tensor(s_dones).to(device)) * args.gamma * (min_qf_next_target).view(-1)
 
-            if global_step % args.policy_frequency == 0:
-                actor_loss = -qf1.forward(s_obs, actor.forward(s_obs, device), device).mean()
-                actor_optimizer.zero_grad()
-                actor_loss.backward()
-                nn.utils.clip_grad_norm_(list(actor.parameters()), args.max_grad_norm)
-                actor_optimizer.step()
+                qf1_a_values = qf1.forward(s_obs, torch.Tensor(s_actions).to(device), device).view(-1)
+                qf2_a_values = qf2.forward(s_obs, torch.Tensor(s_actions).to(device), device).view(-1)
+                qf1_loss = loss_fn(qf1_a_values, next_q_value)
+                qf2_loss = loss_fn(qf2_a_values, next_q_value)
 
-                # update the target network
-                for param, target_param in zip(actor.parameters(), target_actor.parameters()):
-                    target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
-                for param, target_param in zip(qf1.parameters(), qf1_target.parameters()):
-                    target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
-                for param, target_param in zip(qf2.parameters(), qf2_target.parameters()):
-                    target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
+                # optimize the model
+                q_optimizer.zero_grad()
+                qf1_loss.backward()
+                qf2_loss.backward()
+                nn.utils.clip_grad_norm_(list(qf1.parameters())+list(qf2.parameters()), args.max_grad_norm)
+                q_optimizer.step()
+
+                if i % args.policy_frequency == 0:
+                    actor_loss = -qf1.forward(s_obs, actor.forward(s_obs, device), device).mean()
+                    actor_optimizer.zero_grad()
+                    actor_loss.backward()
+                    nn.utils.clip_grad_norm_(list(actor.parameters()), args.max_grad_norm)
+                    actor_optimizer.step()
+
+                    # update the target network
+                    for param, target_param in zip(actor.parameters(), target_actor.parameters()):
+                        target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
+                    for param, target_param in zip(qf1.parameters(), qf1_target.parameters()):
+                        target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
+                    for param, target_param in zip(qf2.parameters(), qf2_target.parameters()):
+                        target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
 
             if global_step % 100 == 0:
                 writer.add_scalar("losses/qf1_loss", qf1_loss.item(), global_step)
                 writer.add_scalar("losses/actor_loss", actor_loss.item(), global_step)
 
         end = time.time()
-        wandb.log({"loop_time": end-start})
+        real_dt = end-start
+        wandb.log({"loop_time": real_dt})
+
+        # make sure loop time/dt is constant (speed calculation are based on fixed dt)
+        dt_diff = args.dt - real_dt
+        if dt_diff < 0 or args.gym_id != "Furuta-v0":
+            pass # bad news the loop is too slow (or we're in sim). todo throw error or warning
+        else:
+            sleep(dt_diff)
 
         # TRY NOT TO MODIFY: CRUCIAL step easy to overlook 
         obs = next_obs
@@ -278,8 +305,11 @@ try:
             # TRY NOT TO MODIFY: record rewards for plotting purposes
             print(f"global_step={global_step}, episode_reward={episode_reward}")
             writer.add_scalar("charts/episodic_return", episode_reward, global_step)
+            if tmp_obs is None:
+                tmp_obs = env.reset()
             obs, episode_reward = tmp_obs, 0
 except KeyboardInterrupt:
+    print("Interrupting training")
     pass
 
 # save model as artifact
