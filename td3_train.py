@@ -8,6 +8,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 
+import pickle
 from time import sleep
 
 import argparse
@@ -201,6 +202,7 @@ actor_optimizer = optim.Adam(list(actor.parameters()), lr=args.learning_rate)
 loss_fn = nn.MSELoss()
 
 # TRY NOT TO MODIFY: start the game
+print("Experiment starts")
 obs = env.reset()
 episode_reward = 0
 
@@ -290,6 +292,9 @@ try:
         else:
             sleep(dt_diff)
 
+        wandb.log({"loop_time": real_dt,
+                   "dt_diff": dt_diff})
+
         # TRY NOT TO MODIFY: CRUCIAL step easy to overlook 
         obs = next_obs
 
@@ -310,7 +315,10 @@ try:
             obs, episode_reward = tmp_obs, 0
 except KeyboardInterrupt:
     print("Interrupting training")
-    pass
+    env.close()
+
+# make sure we saved the current global_step to be able to resume training
+wandb.run.summary["global_step"]
 
 # save model as artifact
 print("Saving model")
@@ -322,6 +330,15 @@ torch.save(target_actor.state_dict(), os.path.join(model_dir, "target_actor.pth"
 artifact = wandb.Artifact("td3_model", type="model")
 artifact.add_dir(model_dir)
 wandb.log_artifact(artifact)
+
+print("Saving replay buffer")
+rb_dir = f"replay_buffers/{experiment_name}"
+os.makedirs(rb_dir)
+fpath = os.path.join(rb_dir, "rb.p")
+pickle.dump(rb.buffer, open(fpath, 'wb'))
+buffer_artifact = wandb.Artifact("td3_replay_buffer", type="replay buffer")
+buffer_artifact.add_file(fpath)
+wandb.log_artifact(buffer_artifact)
 
 env.close()
 writer.close()
