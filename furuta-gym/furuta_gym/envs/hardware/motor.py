@@ -1,4 +1,4 @@
-import RPi.GPIO as GPIO
+import Jetson.GPIO as GPIO
 
 
 class Motor():
@@ -7,11 +7,11 @@ class Motor():
         self.IN1 = IN1
         self.IN2 = IN2
 
-        GPIO.setmode(GPIO.BCM)
+        GPIO.setmode(GPIO.BOARD)
 
         GPIO.setup(self.IN1, GPIO.OUT)
         GPIO.setup(self.IN2, GPIO.OUT)
-        GPIO.setup(self.D2, GPIO.OUT)
+        GPIO.setup(self.D2, GPIO.OUT, initial=GPIO.HIGH)
 
         self.pwm = GPIO.PWM(self.D2, freq)
         self.pwm.start(0)
@@ -35,4 +35,20 @@ class Motor():
 
     def close(self):
         self.set_speed(0)
+        self.pwm.stop()
         GPIO.cleanup()
+
+if __name__ == "__main__":
+    from time import sleep
+
+    motor = Motor(32, 29, 31)
+
+    print("go")
+    for i in range(10):
+        motor.set_speed(0.3)
+        sleep(1/3)
+        motor.set_speed(-0.3)
+        sleep(1/3)
+
+    motor.close()
+

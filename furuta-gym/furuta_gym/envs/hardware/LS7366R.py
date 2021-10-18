@@ -49,11 +49,11 @@ class LS7366R():
     # ----------------------------------------------
     # Constructor
 
-    def __init__(self, CSX, CLK, BTMD):
+    def __init__(self, CSX, CLK, BTMD, BUS):
         self.counterSize = BTMD  # Sets the byte mode that will be used
 
         self.spi = spidev.SpiDev()  # Initialize object
-        self.spi.open(0, CSX)  # Which CS line will be used
+        self.spi.open(BUS, CSX)  # Which CS line will be used
         self.spi.max_speed_hz = CLK  # Speed of clk
 
         # Init the Encoder
@@ -105,11 +105,11 @@ class LS7366R():
 
 if __name__ == "__main__":
 
-    encoder = LS7366R(0, 1000000, 4)
+    encoder = LS7366R(1, 1000000, 4, 1)
     try:
         while True:
-            print("Encoder count: ", encoder.readCounter(), end="\r")
-            sleep(0.2)
+            print("Encoder count: ", str(encoder.readCounter()).zfill(8), end="\r")
+            sleep(0.05)
     except KeyboardInterrupt:
         encoder.close()
         print("Test programming ending.")

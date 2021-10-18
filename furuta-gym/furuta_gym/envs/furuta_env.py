@@ -45,11 +45,13 @@ class FurutaEnv(gym.Env):
 
         self.motor = Motor(D2, IN1, IN2)
 
+        BUS_motor = int(config["Motor Encoder"]["BUS"])
         CS_motor = int(config["Motor Encoder"]["CS"])
+        BUS_pendulum = int(config["Pendulum Encoder"]["BUS"])
         CS_pendulum = int(config["Pendulum Encoder"]["CS"])
 
-        self.motor_enc = LS7366R(CS_motor, 1000000, 4)
-        self.pendulum_enc = LS7366R(CS_pendulum, 1000000, 4)
+        self.motor_enc = LS7366R(CS_motor, 1000000, 4, BUS_motor)
+        self.pendulum_enc = LS7366R(CS_pendulum, 1000000, 4, BUS_pendulum)
 
         self.motor_CPR = float(config["Motor Encoder"]["CPR"])
         self.pendulum_CPR = float(config["Pendulum Encoder"]["CPR"])
@@ -61,13 +63,12 @@ class FurutaEnv(gym.Env):
 
         # clip action
         action = np.clip(action, self.action_space.low, self.action_space.high)
-        action = action[0]
+        action = float(action[0])
 
         # todo: interestingly we compute the reward based on state not obs?
         reward = self.get_reward(self.state, action)
 
         self.motor.set_speed(action)
-        sleep(self.dt)
 
         # check si il est alle trop loin
         motor_angle = self.state[0]*180/np.pi
@@ -83,13 +84,19 @@ class FurutaEnv(gym.Env):
         # todo: consider using a named tuple for the observation
         # pendulum_angle = observation[0]
         # return 180 - abs(pendulum_angle)
-        # --
-        th, al, thd, ald = state
-        al_mod = al % (2 * np.pi) - np.pi
-        cost = al_mod**2 + 5e-3*ald**2 + 1e-1*th**2 + 2e-2*thd**2 + 3e-3*action**2
+        
+        # -- quanser reward
+        # th, al, thd, ald = state
+        # al_mod = al % (2 * np.pi) - np.pi
+        # cost = al_mod**2 + 5e-3*ald**2 + 1e-1*th**2 + 2e-2*thd**2 + 3e-3*action**2
 
-        rwd = np.exp(-cost) * self.dt
-        return np.float32(rwd)
+        # rwd = np.exp(-cost) * self.dt
+        # return np.float32(rwd)
+
+        ## -- CartPoleSwingUp-v1 reward
+        th, al, thd, ald = state
+        reward = (1 + np.cos(al, dtype=np.float32)) / 2
+        return reward
         
     def get_observation(self):
         obs = np.float32([np.cos(self.state[0]), np.sin(self.state[0]),
@@ -100,22 +107,17 @@ class FurutaEnv(gym.Env):
 
 
     def update_state(self):
-        pendulum_deg_per_count = 360/self.pendulum_CPR
+        pendulum_deg_per_count = 2*np.pi/self.pendulum_CPR
         p_count = self.pendulum_enc.readCounter()
         p_count_modulo = p_count % self.pendulum_CPR
         pendulum_angle = pendulum_deg_per_count * p_count_modulo
-        pendulum_angle = (pendulum_angle) % 360 - 180
-        pendulum_angle = -pendulum_angle
+        pendulum_angle = (pendulum_angle + 180) % 360
 
-        motor_deg_per_count = 360/self.motor_CPR
+        motor_deg_per_count = 2*np.pi/self.motor_CPR
         m_count = self.motor_enc.readCounter()
         m_count_modulo = m_count % self.motor_CPR
         motor_angle = m_count_modulo * motor_deg_per_count
         motor_angle = (motor_angle + 180) % 360 - 180
-
-        # convert to rad
-        motor_angle = motor_angle*np.pi/180
-        pendulum_angle = pendulum_angle*np.pi/180
 
         # motor_angle: theta, pendulum angle: alpha
         pos =  np.array([motor_angle, pendulum_angle])
@@ -128,10 +130,11 @@ class FurutaEnv(gym.Env):
         self.steps_taken = 0
 
         # reset motor
+        print("reset motor")
         while True:
             motor_angle = self.update_state()[0]*180/np.pi
 
-            speed = abs(motor_angle)/self.motor_angle_limit * 0.1 + 0.15
+            speed = abs(motor_angle)/self.motor_angle_limit * 0.1 + 0.2
             if abs(motor_angle) < 10:
 
                 # braking
@@ -144,17 +147,19 @@ class FurutaEnv(gym.Env):
 
                 self.motor.set_speed(0)
                 break
-            elif motor_angle > 90:
+            elif motor_angle > 0:
                 self.motor.set_speed(-speed)
-            elif motor_angle < -90:
+            elif motor_angle < 0:
                 self.motor.set_speed(speed)
 
         # wait for pendulum to reset to start position
+        print("reset pendulum")
         count = 0
+        debug_count = 0
         while True:
             pendulum_angle = self.update_state()[1]*180/np.pi
 
-            if abs(pendulum_angle) > 175:
+            if 175 < pendulum_angle < 185:
                 count += 1
             else:
                 count = 0
@@ -164,11 +169,11 @@ class FurutaEnv(gym.Env):
 
             sleep(self.dt)
 
+        print("reset done")
         return self.get_observation()
 
     def render(self, mode='human'):
         raise NotImplementedError
 
     def close(self):
-        self.reset()
         self.motor.close()
