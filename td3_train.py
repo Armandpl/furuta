@@ -206,6 +206,8 @@ print("Experiment starts")
 obs = env.reset()
 episode_reward = 0
 
+first_action_done = False
+
 try:
     for global_step in range(args.total_timesteps):
         start = time.time()
@@ -213,6 +215,11 @@ try:
         if global_step < args.learning_starts:
             action = env.action_space.sample()
         else:
+            # doing this bc it seems like the first time we run this it takes forever??
+            if not first_action_done:
+                print("first action hack")
+                tmp_obs = env.reset()
+                first_action_done = True
             action = actor.forward(obs.reshape((1,)+obs.shape), device)
             action = (
                 action.tolist()[0]
@@ -221,17 +228,23 @@ try:
 
         # TRY NOT TO MODIFY: execute the game and log data.
         next_obs, reward, done, info = env.step(action)
+
+        # reset ASAP
+        if done:
+            tmp_obs = env.reset()
+
         episode_reward += reward
 
         # ALGO LOGIC: training.
         rb.put((obs, action, reward, next_obs, done))
 
         # we use tmp_obs = None to know if we should run env.reset or not
-        tmp_obs = None
+        # tmp_obs = None
         if global_step > args.learning_starts and global_step % args.training_frequency == 0:
             # terminate current episode 
-            done = True
-            tmp_obs = env.reset()
+            if not done:
+                tmp_obs = env.reset()
+                done = True
 
             # train for the past X timestep
             print("learning")
@@ -283,7 +296,9 @@ try:
 
         end = time.time()
         real_dt = end-start
-        wandb.log({"loop_time": real_dt})
+
+        # TRY NOT TO MODIFY: CRUCIAL step easy to overlook 
+        obs = next_obs
 
         # make sure loop time/dt is constant (speed calculation are based on fixed dt)
         dt_diff = args.dt - real_dt
@@ -295,16 +310,14 @@ try:
         wandb.log({"loop_time": real_dt,
                    "dt_diff": dt_diff})
 
-        # TRY NOT TO MODIFY: CRUCIAL step easy to overlook 
-        obs = next_obs
 
-        # wandb.log({
-        #     "env/motor_angle": env.state[0],
-        #     "env/pendulum_angle": env.state[1],
-        #     "env/motor_angle_velocity": env.state[0],
-        #     "env/pendulum_angle_velocity": env.state[1],
-        #     "env/action": action
-        # })
+        wandb.log({
+            "env/motor_angle": env.state[0],
+            "env/pendulum_angle": env.state[1],
+            "env/motor_angle_velocity": env.state[0],
+            "env/pendulum_angle_velocity": env.state[1],
+            "env/action": action
+        })
 
         if done:
             # TRY NOT TO MODIFY: record rewards for plotting purposes
