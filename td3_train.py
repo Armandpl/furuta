@@ -23,7 +23,7 @@ import random
 import os
 
 import furuta_gym
-import gym_cartpole_swingup        
+# import gym_cartpole_swingup        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='TD3 agent')
@@ -104,6 +104,10 @@ if args.track:
 
 # TRY NOT TO MODIFY: seeding
 device = torch.device('cuda' if torch.cuda.is_available() and args.cuda else 'cpu')
+
+if args.gym_id.startswith("Qube"):
+    import quanser_robots
+
 if args.gym_id == "Furuta-v0":
     env = gym.make(args.gym_id, dt=args.dt)
 else:
@@ -209,6 +213,7 @@ obs = env.reset()
 episode_reward = 0
 
 first_action_done = False
+learning_flag = False
 
 try:
     for global_step in range(args.total_timesteps):
@@ -240,13 +245,12 @@ try:
         # ALGO LOGIC: training.
         rb.put((obs, action, reward, next_obs, done))
 
-        # we use tmp_obs = None to know if we should run env.reset or not
-        # tmp_obs = None
-        if global_step > args.learning_starts and global_step % args.training_frequency == 0:
-            # terminate current episode 
-            if not done:
-                tmp_obs = env.reset()
-                done = True
+        # set flag so we know we need to train next time episode is done
+        if global_step % args.training_frequency = 0:
+            learning_flag = True
+
+        if global_step > args.learning_starts and learning_flag and done:
+            learning_flag = False
 
             # train for the past X timestep
             print("learning")
@@ -313,13 +317,14 @@ try:
                    "dt_diff": dt_diff})
 
 
-        wandb.log({
-            "env/motor_angle": env.state[0],
-            "env/pendulum_angle": env.state[1],
-            "env/motor_angle_velocity": env.state[0],
-            "env/pendulum_angle_velocity": env.state[1],
-            "env/action": action
-        })
+        if args.gym_id == "Furuta-v0":
+            wandb.log({
+                "env/motor_angle": env.state[0],
+                "env/pendulum_angle": env.state[1],
+                "env/motor_angle_velocity": env.state[0],
+                "env/pendulum_angle_velocity": env.state[1],
+                "env/action": action
+            })
 
         if done:
             # TRY NOT TO MODIFY: record rewards for plotting purposes
