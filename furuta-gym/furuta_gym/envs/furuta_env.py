@@ -72,7 +72,7 @@ class FurutaEnv(gym.Env):
 
         # check si il est alle trop loin
         motor_angle = self.state[0]*180/np.pi
-        motor_out_of_bounds = abs(motor_angle) > self.motor_angle_limit
+        motor_out_of_bounds = 240 > motor_angle > 120
         # done = self.steps_taken > self.horizon or motor_out_of_bounds
         done = motor_out_of_bounds
 
@@ -117,7 +117,7 @@ class FurutaEnv(gym.Env):
         m_count = self.motor_enc.readCounter()
         m_count_modulo = m_count % self.motor_CPR
         motor_angle = m_count_modulo * motor_deg_per_count
-        motor_angle = (motor_angle + 180) % 360 - 180
+        motor_angle = (motor_angle) % 360
 
         # motor_angle: theta, pendulum angle: alpha
         pos =  np.array([motor_angle, pendulum_angle])
@@ -135,21 +135,21 @@ class FurutaEnv(gym.Env):
             motor_angle = self.update_state()[0]*180/np.pi
 
             speed = abs(motor_angle)/self.motor_angle_limit * 0.1 + 0.2
-            if abs(motor_angle) < 10:
+            if motor_angle < 10 or motor_angle > 350:
 
                 # braking
-                if motor_angle > 0:
+                if motor_angle > 350:
                     self.motor.set_speed(0.4)
-                elif motor_angle < 0:
+                elif motor_angle < 10:
                     self.motor.set_speed(-0.4)
 
                 sleep(10/100)
 
                 self.motor.set_speed(0)
                 break
-            elif motor_angle > 0:
+            elif motor_angle >= 180:
                 self.motor.set_speed(-speed)
-            elif motor_angle < 0:
+            elif motor_angle < 180:
                 self.motor.set_speed(speed)
 
         # wait for pendulum to reset to start position
@@ -161,11 +161,18 @@ class FurutaEnv(gym.Env):
 
             if 175 < pendulum_angle < 185:
                 count += 1
+                debug_count = 0
             else:
                 count = 0
+                debug_count += 1
 
             if count >= 100:
                 break
+
+            if debug_count > 700:
+                enc_count = self.pendulum_enc.readCounter()
+                print(f"{pendulum_angle} pendulum angle, {enc_count} enc count")
+                self.pendulum_enc.clearCounter()
 
             sleep(self.dt)
 
@@ -177,3 +184,4 @@ class FurutaEnv(gym.Env):
 
     def close(self):
         self.motor.close()
+
