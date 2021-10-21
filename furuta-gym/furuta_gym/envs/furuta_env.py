@@ -14,7 +14,7 @@ from .hardware.LS7366R import LS7366R
 class FurutaEnv(gym.Env):
     metadata = {'render.modes': []}
 
-    def __init__(self, dt=0.01, horizon=2000,
+    def __init__(self, dt=0.01, horizon=3000,
                  motor_speed=0.6, motor_angle_limit=120,
                  config_file="furuta.ini"):
         self.dt = dt
@@ -74,7 +74,7 @@ class FurutaEnv(gym.Env):
         motor_angle = self.state[0]*180/np.pi
         motor_out_of_bounds = 240 > motor_angle > 120
         # done = self.steps_taken > self.horizon or motor_out_of_bounds
-        done = motor_out_of_bounds
+        done = motor_out_of_bounds or steps_taken >= self.horizon
 
         info = {}
 
