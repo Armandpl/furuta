@@ -84,6 +84,8 @@ if __name__ == "__main__":
                          help='control frequency')
     parser.add_argument('--training-frequency', type=int, default=1500, # = 15 sec at 100hz
                         help="the frequency of training critics/q functions")
+    parser.add_argument('--policy-starts', type=int, default=25e3,
+                        help="When to start using the learned policy")
 
     args = parser.parse_args()
     if not args.seed:
@@ -212,7 +214,7 @@ try:
     for global_step in range(args.total_timesteps):
         start = time.time()
         # ALGO LOGIC: put action logic here
-        if global_step < args.learning_starts:
+        if global_step < args.policy_starts:
             action = env.action_space.sample()
         else:
             # doing this bc it seems like the first time we run this it takes forever??
