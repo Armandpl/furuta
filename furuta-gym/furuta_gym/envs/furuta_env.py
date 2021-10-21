@@ -107,17 +107,19 @@ class FurutaEnv(gym.Env):
 
 
     def update_state(self):
-        pendulum_deg_per_count = 2*np.pi/self.pendulum_CPR
+        pendulum_deg_per_count = 360/self.pendulum_CPR
         p_count = self.pendulum_enc.readCounter()
         p_count_modulo = p_count % self.pendulum_CPR
         pendulum_angle = pendulum_deg_per_count * p_count_modulo
         pendulum_angle = (pendulum_angle + 180) % 360
+        pendulum_angle = pendulum_angle * np.pi / 180
 
-        motor_deg_per_count = 2*np.pi/self.motor_CPR
+        motor_deg_per_count = 360/self.motor_CPR
         m_count = self.motor_enc.readCounter()
         m_count_modulo = m_count % self.motor_CPR
         motor_angle = m_count_modulo * motor_deg_per_count
-        motor_angle = (motor_angle) % 360
+        motor_angle = motor_angle % 360
+        motor_angle = motor_angle * np.pi / 180
 
         # motor_angle: theta, pendulum angle: alpha
         pos =  np.array([motor_angle, pendulum_angle])
@@ -139,18 +141,18 @@ class FurutaEnv(gym.Env):
 
                 # braking
                 if motor_angle > 350:
-                    self.motor.set_speed(0.4)
-                elif motor_angle < 10:
                     self.motor.set_speed(-0.4)
+                elif motor_angle < 10:
+                    self.motor.set_speed(0.4)
 
                 sleep(10/100)
 
                 self.motor.set_speed(0)
                 break
             elif motor_angle >= 180:
-                self.motor.set_speed(-speed)
-            elif motor_angle < 180:
                 self.motor.set_speed(speed)
+            elif motor_angle < 180:
+                self.motor.set_speed(-speed)
 
         # wait for pendulum to reset to start position
         print("reset pendulum")
