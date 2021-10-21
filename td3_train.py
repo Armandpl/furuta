@@ -223,9 +223,9 @@ try:
             action = env.action_space.sample()
         else:
             # doing this bc it seems like the first time we run this it takes forever??
-            if not first_action_done:
+            if not first_action_done and args.gym_id == "Furuta-v0":
                 print("first action hack")
-                tmp_obs = env.reset()
+                env.motor.set_speed(0)
                 first_action_done = True
             action = actor.forward(obs.reshape((1,)+obs.shape), device)
             action = (
@@ -246,7 +246,7 @@ try:
         rb.put((obs, action, reward, next_obs, done))
 
         # set flag so we know we need to train next time episode is done
-        if global_step % args.training_frequency = 0:
+        if global_step % args.training_frequency == 0:
             learning_flag = True
 
         if global_step > args.learning_starts and learning_flag and done:
