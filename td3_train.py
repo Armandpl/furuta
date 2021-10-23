@@ -22,7 +22,6 @@ import time
 import random
 import os
 
-import furuta_gym
 # import gym_cartpole_swingup        
 
 if __name__ == "__main__":
@@ -109,6 +108,7 @@ if args.gym_id.startswith("Qube"):
     import quanser_robots
 
 if args.gym_id == "Furuta-v0":
+    import furuta_gym
     env = gym.make(args.gym_id, dt=args.dt)
 else:
     env = gym.make(args.gym_id)
@@ -122,7 +122,7 @@ env.observation_space.seed(args.seed)
 # respect the default timelimit
 assert isinstance(env.action_space, Box), "only continuous action space is supported"
 if args.capture_video:
-    env = Monitor(env, f'videos/{experiment_name}')
+    env = Monitor(env, f'videos/{experiment_name}', video_callable=lambda x: True)
 
 # modified from https://github.com/seungeunrho/minimalRL/blob/master/dqn.py#
 class ReplayBuffer():
@@ -296,9 +296,9 @@ try:
                     for param, target_param in zip(qf2.parameters(), qf2_target.parameters()):
                         target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
 
-            if global_step % 100 == 0:
-                writer.add_scalar("losses/qf1_loss", qf1_loss.item(), global_step)
-                writer.add_scalar("losses/actor_loss", actor_loss.item(), global_step)
+                if i % 100 == 0:
+                    writer.add_scalar("losses/qf1_loss", qf1_loss.item(), global_step)
+                    writer.add_scalar("losses/actor_loss", actor_loss.item(), global_step)
 
         end = time.time()
         real_dt = end-start
@@ -317,12 +317,12 @@ try:
                    "dt_diff": dt_diff})
 
 
-        if args.gym_id == "Furuta-v0":
+        if args.gym_id == "Furuta-v0": # or args.gym_id.startswith("Qube"):
             wandb.log({
-                "env/motor_angle": env.state[0],
-                "env/pendulum_angle": env.state[1],
-                "env/motor_angle_velocity": env.state[0],
-                "env/pendulum_angle_velocity": env.state[1],
+                "env/motor_angle": env._state[0],
+                "env/pendulum_angle": env._state[1],
+                "env/motor_angle_velocity": env._state[2],
+                "env/pendulum_angle_velocity": env._state[3],
                 "env/action": action
             })
 
