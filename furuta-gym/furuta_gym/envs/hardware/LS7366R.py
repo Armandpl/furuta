@@ -5,7 +5,6 @@
 # Last Edit: May 12th 2020
 # Reason: Updating to python3... better late than never eh?
 
-import spidev
 from time import sleep
 
 
@@ -16,7 +15,6 @@ from time import sleep
 # These are the values I normally use.
 
 class LS7366R():
-
     # -------------------------------------------
     # Constants
 
@@ -50,6 +48,7 @@ class LS7366R():
     # Constructor
 
     def __init__(self, CSX, CLK, BTMD, BUS):
+        import spidev
         self.counterSize = BTMD  # Sets the byte mode that will be used
 
         self.spi = spidev.SpiDev()  # Initialize object

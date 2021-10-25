@@ -1,8 +1,6 @@
-import Jetson.GPIO as GPIO
-
-
 class Motor():
     def __init__(self, D2, IN1, IN2, freq=500):
+        import Jetson.GPIO as GPIO
         self.D2 = D2
         self.IN1 = IN1
         self.IN2 = IN2
