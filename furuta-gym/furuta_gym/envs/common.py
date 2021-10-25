@@ -1,29 +1,23 @@
 # https://git.ias.informatik.tu-darmstadt.de/quanser/clients/-/blob/v0.1.1/quanser_robots/common.py
-import numpy as np
-from scipy import signal
 import gym
 from gym import spaces
+import numpy as np
+from scipy import signal
 
 
-class SymmetricBoxSpace:
-    """
-    Generic real-valued box space with symmetric boundaries.
-    """
-    def __init__(self, bound: np.ndarray, labels: tuple):
-        self.bound_lo = -bound
-        self.bound_up = bound
-        self.labels = labels
-        self.dim = len(labels)
+def deg2rad(deg):
+    return deg * np.pi / 180
 
-    def project(self, ele: np.ndarray):
-        return np.clip(ele, self.bound_lo, self.bound_up)
+
+def rad2deg(rad):
+    return rad * 180 / np.pi
 
 
 class VelocityFilter:
     """
     Discrete velocity filter derived from a continuous one.
     """
-    def __init__(self, x_len, num=(50, 0), den=(1, 50), dt=0.002, x_init=None):
+    def __init__(self, x_len, dt, num=(50, 0), den=(1, 50), x_init=None):
         """
         Initialize discrete filter coefficients.
         :param x_len: number of measured state variables to receive
@@ -43,7 +37,7 @@ class VelocityFilter:
 
     def set_initial_state(self, x_init):
         """
-        This method can be used to set the initial state of the velocity filter.
+        This method can be used to set the initial state of the velocity filter
         This is useful when the initial (position) observation
         has been retrieved and it is non-zero.
         Otherwise the filter would assume a very high velocity.
@@ -107,8 +101,10 @@ class PhysicSystem:
 
     def add_acceleration(self, **kwargs):
         for k in kwargs:
-            setattr(self, k + "_dot", getattr(self, k + "_dot") + self.dt * kwargs[k])
-            setattr(self, k, getattr(self, k) + self.dt * getattr(self, k + "_dot"))
+            setattr(self, k + "_dot", getattr(self, k + "_dot") +
+                    self.dt * kwargs[k])
+            setattr(self, k, getattr(self, k) +
+                    self.dt * getattr(self, k + "_dot"))
 
     def get_state(self, entities_list):
         ret = []
@@ -116,14 +112,3 @@ class PhysicSystem:
             ret.append(getattr(self, k))
         return np.array(ret)
 
-
-class NoFilter:
-
-    def __init__(self, x_init=0., dt=0.002):
-        self.x = x_init
-        self.dt = dt
-
-    def __call__(self, *args, **kwargs):
-        ret = (np.array(args) - self.x)/self.dt
-        self.x = np.array(args)
-        return ret
