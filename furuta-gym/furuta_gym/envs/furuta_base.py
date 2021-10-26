@@ -65,7 +65,7 @@ class FurutaBase(gym.Env):
         al_mod = al % (2 * np.pi) - np.pi
 
         if self.rwd_name == "quanser":
-            cost = al_mod**2 + 5e-3*ald**2 + 1e-1*th**2 + 2e-2*thd**2 + 3e-3*a[0]**2
+            cost = al_mod**2 + 5e-3*ald**2 + 1e-1*th**2 + 2e-2*thd**2 + 12*3e-3*a[0]**2
             rwd = np.exp(-cost) * self.timing.dt_ctrl
         elif self.rwd_name == "simple":
             rwd = (1 + np.cos(al_mod, dtype=np.float32)) / 2
