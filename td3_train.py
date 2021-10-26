@@ -20,6 +20,7 @@ import gym
 from gym.wrappers import Monitor
 from gym.spaces import Box
 import numpy as np
+from tqdm import tqdm
 import wandb
 
 import furuta_gym  # noqa F420
@@ -60,6 +61,11 @@ def setup_env(args, experiment_name):
                    max_steps=args.max_steps, reward=args.reward,
                    action_limiter=args.action_limiter,
                    safety_th_lim=args.safety_th_lim)
+
+    if args.gym_id == "FurutaSim-v0" and args.custom_sim:
+        from furuta_params import params
+        env.dyn.params = params
+        logging.info(f"Loaded sim params: \n{env.dyn.params}")
 
     assert isinstance(env.action_space, Box), "only continuous action space is supported"
     if args.gym_id == "FurutaReal-v0":
@@ -195,8 +201,8 @@ def train(args, env, rb, actor, qf1, qf2, device, writer, experiment_name):
     qf2_target.load_state_dict(qf2.state_dict())
 
     # setup loss and optimizers
-    q_optimizer = optim.Adam(list(qf1.parameters()) + list(qf2.parameters()), lr=args.learning_rate)
-    actor_optimizer = optim.Adam(list(actor.parameters()), lr=args.learning_rate)
+    q_optimizer = optim.Adam(list(qf1.parameters()) + list(qf2.parameters()), lr=args.critic_learning_rate)
+    actor_optimizer = optim.Adam(list(actor.parameters()), lr=args.actor_learning_rate)
     loss_fn = nn.MSELoss()
 
     # Start the game
@@ -245,7 +251,7 @@ def train(args, env, rb, actor, qf1, qf2, device, writer, experiment_name):
 
                 # train for the past X timestep
                 logging.info("Learning...")
-                for i in range(args.training_frequency):
+                for i in tqdm(range(args.training_iterations)):
                     s_obs, s_actions, s_rewards, s_next_obses, s_dones = rb.sample(args.batch_size)
                     with torch.no_grad():
                         clipped_noise = (
@@ -361,7 +367,9 @@ def parse_args():
                         help='the name of this experiment')
     parser.add_argument('--gym-id', type=str, default="FurutaSim-v0",
                         help='the id of the gym environment')
-    parser.add_argument('--learning-rate', type=float, default=3e-4,
+    parser.add_argument('--actor-learning-rate', type=float, default=1e-4,
+                        help='the learning rate of the optimizer')
+    parser.add_argument('--critic-learning-rate', type=float, default=1e-3,
                         help='the learning rate of the optimizer')
     parser.add_argument('--seed', type=int, default=1,
                         help='seed of the experiment')
@@ -390,8 +398,8 @@ def parse_args():
                         help='the replay memory buffer size')
     parser.add_argument('--gamma', type=float, default=0.99,
                         help='the discount factor gamma')
-    parser.add_argument('--tau', type=float, default=0.005,
-                        help="target smoothing coefficient (default: 0.005)")
+    parser.add_argument('--tau', type=float, default=0.01,
+                        help="target smoothing coefficient (default: 0.01)")
     parser.add_argument('--max-grad-norm', type=float, default=0.5,
                         help='the maximum norm for the gradient clipping')
     parser.add_argument('--batch-size', type=int, default=256,
@@ -417,8 +425,11 @@ def parse_args():
     parser.add_argument('--neurons', type=int, default=256,
                         help='hidden layer size for the networks')
     parser.add_argument('--training-frequency',
-                        type=int, default=1500,  # = 15 sec at 100hz
+                        type=int, default=3000,  # = 39 sec at 100hz
                         help="The frequency of training critics/q functions")
+    parser.add_argument('--training-iterations',
+                        type=int, default=100,
+                        help="How many training iterations")
     parser.add_argument('--policy-starts', type=int, default=25e3,
                         help="When to start using the learned policy")
 
@@ -435,6 +446,8 @@ def parse_args():
                         help='Max motor (theta) angle in rad.')
     parser.add_argument('--reward', type=str, default="quanser",
                         help='Which reward to use? See env code.')
+    parser.add_argument('--custom-sim', action="store_true",
+                        help='If specified, use params from furuta_params.py')
 
     args = parser.parse_args()
     return args
