@@ -180,13 +180,13 @@ def setup_model(args, env, device):
         qf2.load_state_dict(torch.load(os.path.join(artifact_dir, "qf2.pth")))
 
     if args.rb_artifact is not None:
-        logging.info(f"loading model from Artifacts, \
-                     version {args.model_artifact}")
-        artifact = wandb.use_artifact(f"td3_replay_buffer:{args.model_artifact}")
+        logging.info(f"loading replay buffer from Artifacts, \
+                     version {args.rb_artifact}")
+        artifact = wandb.use_artifact(f"td3_replay_buffer:{args.rb_artifact}")
         artifact_dir = artifact.download()
         # TODO: will probably overwrite buffer size or throw error
         # if buffer size was different. handle that
-        rb.buffer = pickle.load(open(os.path.join(artifact_dir, 'rb.p')))
+        rb.buffer = pickle.load(open(os.path.join(artifact_dir, 'rb.p'), 'rb'))
 
     return rb, actor, qf1, qf2
 
