@@ -59,19 +59,19 @@ class QubeDynamics:
         self.g = 9.81
 
         # Motor
-        self.Rm = 6.7  # resistance (rated voltage/stall current)
+        self.Rm = 8.4  # resistance (rated voltage/stall current)
 
         # back-emf constant (V-s/rad)
-        self.km = 0.067  # (rated voltage / no load speed)
+        self.km = 0.042  # (rated voltage / no load speed)
 
         # Rotary arm
-        self.Mr = 0.057  # mass (kg)
-        self.Lr = 0.083  # length (m)
+        self.Mr = 0.095  # mass (kg)
+        self.Lr = 0.085  # length (m)
         self.Dr = 5e-6   # viscous damping (N-m-s/rad), original: 0.0015
 
         # Pendulum link
-        self.Mp = 0.027  # mass (kg)
-        self.Lp = 0.092  # length (m)
+        self.Mp = 0.024  # mass (kg)
+        self.Lp = 0.129  # length (m)
         self.Dp = 1e-6   # viscous damping (N-m-s/rad), original: 0.0005
 
         # Init constants
