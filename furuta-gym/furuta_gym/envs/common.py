@@ -64,20 +64,6 @@ class LabeledBox(spaces.Box):
         self.labels = labels
 
 
-class GentlyTerminating(gym.Wrapper):
-    """
-    This env wrapper sends zero command to the robot when an episode is done.
-    """
-    def step(self, action):
-        observation, reward, done, info = self.env.step(action)
-        if done:
-            self.env.step(np.zeros(self.env.action_space.shape))
-        return observation, reward, done, info
-
-    def reset(self):
-        return self.env.reset()
-
-
 class Timing:
     def __init__(self, fs, fs_ctrl):
         fs_ctrl_min = 50.0  # minimal control rate
@@ -111,4 +97,3 @@ class PhysicSystem:
         for k in entities_list:
             ret.append(getattr(self, k))
         return np.array(ret)
-
