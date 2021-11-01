@@ -12,10 +12,10 @@ from .hardware.LS7366R import LS7366R
 
 class FurutaReal(FurutaBase):
 
-    def __init__(self, fs=200, fs_ctrl=100, max_steps=300, reward="quanser",
+    def __init__(self, fs=200, fs_ctrl=100, reward="quanser",
                  action_limiter=True, safety_th_lim=1.5,
                  config_file="furuta.ini"):
-        super().__init__(fs, fs_ctrl, max_steps, reward,
+        super().__init__(fs, fs_ctrl, reward,
                          action_limiter, safety_th_lim)
 
         self.vel_filt = VelocityFilter(2, dt=self.timing.dt)
@@ -66,8 +66,6 @@ class FurutaReal(FurutaBase):
         return state
 
     def reset(self):
-        super().reset()
-
         # reset motor
         logging.debug("Reset motor")
         while True:

@@ -31,7 +31,6 @@ class FurutaSim(FurutaBase):
         return np.copy(self._state)
 
     def reset(self):
-        super().reset()
         self._calibrate()
         return self.step(np.array([0.0]))[0]
 

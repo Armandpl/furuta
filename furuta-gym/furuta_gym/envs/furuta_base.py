@@ -11,14 +11,12 @@ from .common import LabeledBox, Timing
 class FurutaBase(gym.Env):
     metadata = {"render.modes": ["rgb_array"]}
 
-    def __init__(self, fs, fs_ctrl, max_steps,
+    def __init__(self, fs, fs_ctrl,
                  reward, action_limiter, safety_th_lim):
 
         self._state = None
         self.timing = Timing(fs, fs_ctrl)
-        self.steps_taken = 0
         self.viewer = None
-        self.max_steps = max_steps
         self.action_limiter = action_limiter
         self.rwd_name = reward
 
@@ -85,10 +83,8 @@ class FurutaBase(gym.Env):
 
         rwd = self._rwd(self._state, a)
         self._state, act = self._ctrl_step(a)
-        self.steps_taken += 1
 
-        done = not self.state_space.contains(self._state) or \
-            self.steps_taken > self.max_steps
+        done = not self.state_space.contains(self._state)
 
         al = (self._state[1] % 2 * np.pi) - np.pi
         obs = np.float32([np.cos(self._state[0]), np.sin(self._state[0]),
@@ -104,7 +100,7 @@ class FurutaBase(gym.Env):
         return obs, rwd, done, info
 
     def reset(self):
-        self.steps_taken = 0
+        raise NotImplementedError
 
     def render(self, mode="rgb_array"):
         if self.viewer is None:
