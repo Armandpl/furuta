@@ -1,16 +1,7 @@
 # https://git.ias.informatik.tu-darmstadt.de/quanser/clients/-/blob/v0.1.1/quanser_robots/common.py
-import gym
 from gym import spaces
 import numpy as np
 from scipy import signal
-
-
-def deg2rad(deg):
-    return deg * np.pi / 180
-
-
-def rad2deg(rad):
-    return rad * 180 / np.pi
 
 
 class VelocityFilter:
