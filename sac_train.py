@@ -45,8 +45,21 @@ def main(args):
     except KeyboardInterrupt:
         logging.info("Interupting training")
 
-    # TODO: save model and replay buffer
+    logging.info("Saving model")
+    model_path = f"runs/{run.id}/models/sac.zip"
+    model.save(model_path)
+    artifact = wandb.Artifact("sac_model", type="model")
+    artifact.add_file(model_path)
+    wandb.log_artifact(artifact)
 
+    logging.info("Saving replay buffer")
+    buffer_path = f"runs/{run.id}/buffers/buffer.pkl"
+    model.save_replay_buffer(buffer_path)
+    artifact = wandb.Artifact("sac_replay_buffer", type="replay buffer")
+    artifact.add_file(buffer_path)
+    wandb.log_artifact(artifact)
+
+    env.close()
     run.finish()
 
 
@@ -80,7 +93,7 @@ def setup_env(args):
         env = DummyVecEnv([lambda: env])
         pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
         env = VecVideoRecorder(env, f"videos/{wandb.run.id}",
-                               record_video_trigger=lambda x: x % 2000 == 0,
+                               record_video_trigger=lambda x: x % 30e3 == 0,
                                video_length=200)
 
     return env
@@ -97,7 +110,7 @@ def parse_args():
                         help='seed of the experiment')
     parser.add_argument('--total_timesteps', type=int, default=1000000,
                         help='total timesteps of the experiments')
-    parser.add_argument('--capture_video', action="store_true", default=False,
+    parser.add_argument('--capture_video', action="store_true",
                         help='weather to capture videos of the agent\
                               performances (check out `videos` folder)')
     parser.add_argument('--wandb_project', type=str, default="furuta",
