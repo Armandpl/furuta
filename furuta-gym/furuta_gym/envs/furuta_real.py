@@ -16,7 +16,8 @@ class FurutaReal(FurutaBase):
                  action_limiter=True, safety_th_lim=1.5,
                  reward="simple", state_limits='low',
                  config_file="furuta.ini"):
-        super().__init__(fs, fs_ctrl, action_limiter, safety_th_lim, reward)
+        super().__init__(fs, fs_ctrl, action_limiter, safety_th_lim,
+                         reward, state_limits)
 
         self.vel_filt = VelocityFilter(2, dt=self.timing.dt)
 
