@@ -11,7 +11,8 @@ from .common import LabeledBox, Timing
 class FurutaBase(gym.Env):
     metadata = {"render.modes": ["rgb_array"]}
 
-    def __init__(self, fs, fs_ctrl, action_limiter, safety_th_lim, reward):
+    def __init__(self, fs, fs_ctrl, action_limiter, safety_th_lim,
+                 reward, state_limits):
 
         self._state = None
         self.timing = Timing(fs, fs_ctrl)
@@ -19,7 +20,13 @@ class FurutaBase(gym.Env):
         self.viewer = None
 
         act_max = np.array([1.0])
-        state_max = np.array([2.0, 4.0 * np.pi, 30.0, 40.0])
+
+        # TODO: track state max better? more elegant way of doing
+        if state_limits == 'high':
+            state_max = np.array([2.0, 8.0 * np.pi, 300.0, 400.0])
+        elif state_limits == 'low':
+            state_max = np.array([2.0, 4.0 * np.pi, 30.0, 40.0])
+
         obs_max = np.array([1.0, 1.0, 1.0, 1.0, state_max[2], state_max[3]])
 
         # Spaces

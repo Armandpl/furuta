@@ -1,7 +1,5 @@
 import argparse
 import logging
-import os
-import pickle
 
 import gym
 from gym.wrappers import TimeLimit
@@ -94,7 +92,7 @@ def setup_env(args):
         pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
         env = VecVideoRecorder(env, f"videos/{wandb.run.id}",
                                record_video_trigger=lambda x: x % 30e3 == 0,
-                               video_length=200)
+                               video_length=300)
 
     return env
 
@@ -167,6 +165,8 @@ def parse_args():
                         help='Max motor (theta) angle in rad.')
     parser.add_argument('--action_limiter', type=bool, default=True,
                         help='Restrict actions')
+    parser.add_argument('--state_limits', type=str, default="low",
+                        help='Wether to use high or low limits. See code.')
     parser.add_argument('--reward', type=str, default="simple",
                         help='Which reward to use? See env code.')
     parser.add_argument('--continuity_cost', type=bool, default=True,
