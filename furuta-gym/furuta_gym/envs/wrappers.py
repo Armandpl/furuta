@@ -22,9 +22,10 @@ class HistoryWrapper(gym.Wrapper):
     Track history of observations for given amount of steps
     Initial steps are zero-filled
     """
-    def __init__(self, env, steps):
+    def __init__(self, env, steps, use_continuity_cost):
         super(HistoryWrapper, self).__init__(env)
         self.steps = steps
+        self.use_continuity_cost = use_continuity_cost
 
         # concat obs with action
         self.step_low = np.concatenate([self.observation_space.low,
@@ -58,7 +59,8 @@ class HistoryWrapper(gym.Wrapper):
         self.history.append(obs)
         obs = np.array(self.history)
 
-        reward -= self._continuity_cost(obs)
+        if self.use_continuity_cost:
+            reward -= self._continuity_cost(obs)
 
         return obs, reward, done, info
 
