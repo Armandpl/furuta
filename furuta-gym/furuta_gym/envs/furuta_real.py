@@ -12,11 +12,11 @@ from .hardware.LS7366R import LS7366R
 
 class FurutaReal(FurutaBase):
 
-    def __init__(self, fs=200, fs_ctrl=100, reward="quanser",
+    def __init__(self, fs=200, fs_ctrl=100,
                  action_limiter=True, safety_th_lim=1.5,
+                 reward="simple",
                  config_file="furuta.ini"):
-        super().__init__(fs, fs_ctrl, reward,
-                         action_limiter, safety_th_lim)
+        super().__init__(fs, fs_ctrl, action_limiter, safety_th_lim, reward)
 
         self.vel_filt = VelocityFilter(2, dt=self.timing.dt)
 

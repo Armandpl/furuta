@@ -11,14 +11,12 @@ from .common import LabeledBox, Timing
 class FurutaBase(gym.Env):
     metadata = {"render.modes": ["rgb_array"]}
 
-    def __init__(self, fs, fs_ctrl,
-                 reward, action_limiter, safety_th_lim):
+    def __init__(self, fs, fs_ctrl, action_limiter, safety_th_lim, reward):
 
         self._state = None
         self.timing = Timing(fs, fs_ctrl)
-        self.viewer = None
-        self.action_limiter = action_limiter
         self.rwd_name = reward
+        self.viewer = None
 
         act_max = np.array([1.0])
         state_max = np.array([2.0, 4.0 * np.pi, 30.0, 40.0])
@@ -34,12 +32,14 @@ class FurutaBase(gym.Env):
         self.action_space = LabeledBox(
             labels=('action',),
             low=-act_max, high=act_max, dtype=np.float32)
-        self.reward_range = (0.0, self.timing.dt_ctrl)
 
         # Function to ensure that state and action constraints are satisfied
-        self._lim_act = ActionLimiter(self.state_space,
-                                      self.action_space,
-                                      safety_th_lim)
+        if action_limiter:
+            self._lim_act = ActionLimiter(self.state_space,
+                                          self.action_space,
+                                          safety_th_lim)
+        else:
+            self._lim_act = None
 
         # Initialize random number generator
         self._np_random = None
@@ -60,13 +60,15 @@ class FurutaBase(gym.Env):
 
     def _rwd(self, state, a):
         th, al, thd, ald = state
-        al_mod = al % (2 * np.pi) - np.pi
 
+        al_mod = (al % 2 * np.pi) - np.pi
         if self.rwd_name == "quanser":
-            cost = al_mod**2 + 5e-3*ald**2 + 1e-1*th**2 + 2e-2*thd**2 + 12*3e-3*a[0]**2
+            cost = al_mod**2 + 5e-3*ald**2 + 1e-1*th**2
+            + 2e-2*thd**2 + 12*3e-3*a[0]**2
+
             rwd = np.exp(-cost) * self.timing.dt_ctrl
         elif self.rwd_name == "simple":
-            rwd = (1 + np.cos(al_mod, dtype=np.float32)) / 2
+            rwd = (1 + -np.cos(al, dtype=np.float32)) / 2
 
         return rwd
 
@@ -81,14 +83,13 @@ class FurutaBase(gym.Env):
         assert a.ndim == 1, \
             "The action = {a} must be 1d but the input is {a.ndim}d"
 
-        rwd = self._rwd(self._state, a)
         self._state, act = self._ctrl_step(a)
 
+        rwd = self._rwd(self._state, a)
         done = not self.state_space.contains(self._state)
 
-        al = (self._state[1] % 2 * np.pi) - np.pi
         obs = np.float32([np.cos(self._state[0]), np.sin(self._state[0]),
-                          np.cos(al), np.sin(al),
+                          np.cos(self._state[1]), np.sin(self._state[1]),
                           self._state[2], self._state[3]])
 
         info = {"env/motor_angle": self._state[0],
@@ -169,6 +170,7 @@ class CartPoleSwingUpViewer:
     screen = Screen(width=600, height=400)
 
     def __init__(self, world_width):
+        # TODO: make sure that's not redundant
         from gym.envs.classic_control import rendering
         import pyglet
         pyglet.options['headless'] = True  # noqa: F821
