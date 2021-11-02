@@ -108,7 +108,7 @@ def parse_args():
                         help='seed of the experiment')
     parser.add_argument('--total_timesteps', type=int, default=1000000,
                         help='total timesteps of the experiments')
-    parser.add_argument('--capture_video', action="store_true",
+    parser.add_argument('--capture_video', type=bool, default=False,
                         help='weather to capture videos of the agent\
                               performances (check out `videos` folder)')
     parser.add_argument('--wandb_project', type=str, default="furuta",
@@ -173,7 +173,7 @@ def parse_args():
                         help='If true use continuity cost from HistoryWrapper')
     parser.add_argument('--history', type=int, default=1,
                         help='If >1 use HistoryWrapper')
-    parser.add_argument('--custom_sim', action="store_true",
+    parser.add_argument('--custom_sim', type=bool, default=False,
                         help='If specified, use params from furuta_params.py')
 
     args = parser.parse_args()
