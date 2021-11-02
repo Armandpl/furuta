@@ -50,7 +50,7 @@ class FurutaBase(gym.Env):
         a_cmd = None
 
         for _ in range(self.timing.n_sim_per_ctrl):
-            if self.action_limiter:
+            if self._lim_act is not None:
                 a_cmd = self._lim_act(x, a)
             else:
                 a_cmd = a
