@@ -1,6 +1,10 @@
+import time
+
 import gym
 from gym.spaces import Box
 import numpy as np
+
+import wandb
 
 
 class GentlyTerminating(gym.Wrapper):
@@ -10,10 +14,46 @@ class GentlyTerminating(gym.Wrapper):
     def step(self, action):
         observation, reward, done, info = self.env.step(action)
         if done:
-            self.env.step(np.zeros(self.env.action_space.shape))
+            # TODO: find how to bypass sb3 monitor: tried to step env that needs reset
+            # self.env.step(np.zeros(self.env.action_space.shape))
+            # maybe by changing the wrappers order
+            self.env.motor.set_speed(0)
         return observation, reward, done, info
 
     def reset(self):
+        return self.env.reset()
+
+
+class ControlFrequency(gym.Wrapper):
+    """
+    Enforce a sleeping time (dt) between each step.
+    """
+    def __init__(self, env, dt):
+        super(ControlFrequency, self).__init__(env)
+        self.dt = dt
+
+    def step(self, action):
+        current = time.time()
+        loop_time = 0
+        if self.last is not None:
+            loop_time = current - self.last
+            sleeping_time = self.dt - loop_time
+
+            if sleeping_time > 0:
+                # time.sleep(sleeping_time)
+                pass
+            else:
+                pass
+                # print("warning, loop time > dt")
+
+        self.last = time.time()
+        obs, reward, done, info = self.env.step(action)
+        wandb.log({**info, **{"loop time": loop_time}})
+
+        return obs, reward, done, info
+
+    def reset(self):
+        self.last = None
         return self.env.reset()
 
 
