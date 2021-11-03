@@ -1,16 +1,16 @@
 import argparse
+from distutils.util import strtobool
 import logging
 
 import gym
 from gym.wrappers import TimeLimit
-import pyvirtualdisplay
 from stable_baselines3 import SAC
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
 import wandb
 
 import furuta_gym  # noqa F420
-from furuta_gym.envs.wrappers import GentlyTerminating, HistoryWrapper
+from furuta_gym.envs.wrappers import GentlyTerminating, HistoryWrapper, ControlFrequency
 
 
 def main(args):
@@ -26,6 +26,7 @@ def main(args):
     env = setup_env(args)
 
     verbose = 2 if args.debug else 0
+    # policy_kwargs = dict(net_arch=[32, 32])
     model = SAC(
                 "MlpPolicy", env, verbose=verbose,
                 learning_rate=args.learning_rate, seed=args.seed,
@@ -33,12 +34,15 @@ def main(args):
                 gamma=args.gamma, batch_size=args.batch_size,
                 target_update_interval=args.target_update_interval,
                 learning_starts=args.learning_starts,
-                use_sde=args.use_sde, use_sde_at_warmup=args.use_sde_at_warmup,
+                # use_sde=args.use_sde, use_sde_at_warmup=args.use_sde_at_warmup,
+                use_sde=False, use_sde_at_warmup=False,
                 train_freq=args.train_freq, gradient_steps=args.gradient_steps,
-                tensorboard_log=f"runs/{run.id}"
+                tensorboard_log=f"runs/{run.id}",
+                # policy_kwargs=policy_kwargs
             )
 
     try:
+        logging.info("Starting to train")
         model.learn(total_timesteps=args.total_timesteps)
     except KeyboardInterrupt:
         logging.info("Interupting training")
@@ -85,9 +89,10 @@ def setup_env(args):
     # if robot
     if args.gym_id == "FurutaReal-v0":
         env = GentlyTerminating(env)
-        # TODO: add wrapper to enforce control freq
+        env = ControlFrequency(env, env.timing.dt_ctrl)
 
     if args.capture_video:
+        import pyvirtualdisplay
         env = DummyVecEnv([lambda: env])
         pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
         env = VecVideoRecorder(env, f"videos/{wandb.run.id}",
@@ -108,7 +113,7 @@ def parse_args():
                         help='seed of the experiment')
     parser.add_argument('--total_timesteps', type=int, default=1000000,
                         help='total timesteps of the experiments')
-    parser.add_argument('--capture_video', type=bool, default=False,
+    parser.add_argument('--capture_video', action="store_true",
                         help='weather to capture videos of the agent\
                               performances (check out `videos` folder)')
     parser.add_argument('--wandb_project', type=str, default="furuta",
@@ -133,11 +138,11 @@ def parse_args():
                         type=int, default=25e3,
                         help="when to start learning")
     parser.add_argument('--use_sde',
-                        type=bool, default=True,
+                        type=lambda x:bool(strtobool(x)), default=True,
                         help="Whether to use generalized State Dependent Exploration (gSDE) \
                         instead of action noise exploration")
     parser.add_argument('--use_sde_at_warmup',
-                        type=bool, default=True,
+                        type=lambda x:bool(strtobool(x)), default=True,
                         help="Whether to use gSDE instead of uniform sampling during the warm up \
                         phase (before learning starts)")
 
@@ -163,17 +168,18 @@ def parse_args():
                         -1 = infinite')
     parser.add_argument('--safety_th_lim', type=float, default=1.5,
                         help='Max motor (theta) angle in rad.')
-    parser.add_argument('--action_limiter', type=bool, default=True,
+    parser.add_argument('--action_limiter', action="store_true",
                         help='Restrict actions')
     parser.add_argument('--state_limits', type=str, default="low",
                         help='Wether to use high or low limits. See code.')
     parser.add_argument('--reward', type=str, default="simple",
                         help='Which reward to use? See env code.')
-    parser.add_argument('--continuity_cost', type=bool, default=True,
+    parser.add_argument('--continuity_cost',
+                        type=lambda x:bool(strtobool(x)), default=True,
                         help='If true use continuity cost from HistoryWrapper')
     parser.add_argument('--history', type=int, default=1,
                         help='If >1 use HistoryWrapper')
-    parser.add_argument('--custom_sim', type=bool, default=False,
+    parser.add_argument('--custom_sim', action="store_true",
                         help='If specified, use params from furuta_params.py')
 
     args = parser.parse_args()
