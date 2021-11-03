@@ -47,7 +47,7 @@ class FurutaBase(gym.Env):
                                           safety_th_lim)
         else:
             self._lim_act = None
-
+        
         # Initialize random number generator
         self._np_random = None
         self.seed()
