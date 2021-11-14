@@ -21,18 +21,18 @@ class FurutaBase(gym.Env):
 
         act_max = np.array([1.0])
 
-        # TODO: track state max better? more elegant way of doing
         if state_limits == 'high':
-            state_max = np.array([2.0, 8.0 * np.pi, 300.0, 400.0])
+            self.state_max = np.array([2.0, 4.0 * np.pi, 300.0, 400.0])
         elif state_limits == 'low':
-            state_max = np.array([2.0, 4.0 * np.pi, 30.0, 40.0])
+            self.state_max = np.array([2.0, 4.0 * np.pi, 30.0, 40.0])
 
-        obs_max = np.array([1.0, 1.0, 1.0, 1.0, state_max[2], state_max[3]])
+        obs_max = np.array([1.0, 1.0, 1.0, 1.0,
+                            self.state_max[2], self.state_max[3]])
 
         # Spaces
         self.state_space = LabeledBox(
             labels=('theta', 'alpha', 'theta_dot', 'alpha_dot'),
-            low=-state_max, high=state_max, dtype=np.float32)
+            low=-self.state_max, high=self.state_max, dtype=np.float32)
         self.observation_space = LabeledBox(
             labels=('cos_th', 'sin_th', 'cos_al', 'sin_al', 'th_d', 'al_d'),
             low=-obs_max, high=obs_max, dtype=np.float32)
@@ -47,7 +47,7 @@ class FurutaBase(gym.Env):
                                           safety_th_lim)
         else:
             self._lim_act = None
-        
+
         # Initialize random number generator
         self._np_random = None
         self.seed()
