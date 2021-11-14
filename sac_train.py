@@ -104,7 +104,7 @@ def setup_env(args):
         env = DummyVecEnv([lambda: env])
         pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
         env = VecVideoRecorder(env, f"videos/{wandb.run.id}",
-                               record_video_trigger=lambda x: x % 150e3 == 0,
+                               record_video_trigger=lambda x: x % 30000 == 0,
                                video_length=300)
 
     return env
