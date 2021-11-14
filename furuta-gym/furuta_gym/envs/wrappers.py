@@ -40,15 +40,14 @@ class ControlFrequency(gym.Wrapper):
             sleeping_time = self.dt - loop_time
 
             if sleeping_time > 0:
-                # time.sleep(sleeping_time)
-                pass
+                time.sleep(sleeping_time)
             else:
-                pass
-                # print("warning, loop time > dt")
+                print("warning, loop time > dt")
 
         self.last = time.time()
         obs, reward, done, info = self.env.step(action)
-        wandb.log({**info, **{"loop time": loop_time}})
+        # TODO: log this only if debug enabled
+        # wandb.log({**info, **{"loop time": loop_time}})
 
         return obs, reward, done, info
 

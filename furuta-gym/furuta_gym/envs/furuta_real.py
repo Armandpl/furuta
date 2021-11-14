@@ -109,8 +109,9 @@ class FurutaReal(FurutaBase):
         debug_count = 0
         while True:
             pendulum_angle = self._read_state()[1]*180/np.pi
+            pendulum_angle = pendulum_angle%360
 
-            if 354 < pendulum_angle or pendulum_angle < 6:  # TODO use cos/sin instead
+            if 355 < pendulum_angle or pendulum_angle < 5:  # TODO use cos/sin instead
                 count += 1
                 debug_count = 0
             else:
@@ -118,6 +119,7 @@ class FurutaReal(FurutaBase):
                 debug_count += 1
 
             if count >= int(1/self.timing.dt_ctrl):
+                self.pendulum_enc.clearCounter()
                 break
 
             if debug_count > 700:
@@ -125,8 +127,8 @@ class FurutaReal(FurutaBase):
                 print(f"{pendulum_angle} pendulum angle, \
                               {enc_count} enc count")
                 self.pendulum_enc.clearCounter()
-
-            # sleep(self.timing.dt_ctrl)
+            
+            sleep(self.timing.dt_ctrl)
 
         print("reset done")
         return self.step(np.array([0.0]))[0]

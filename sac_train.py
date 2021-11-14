@@ -1,6 +1,7 @@
 import argparse
 from distutils.util import strtobool
 import logging
+import os
 
 import gym
 from gym.wrappers import TimeLimit
@@ -44,6 +45,13 @@ def main(args):
                 tensorboard_log=f"runs/{run.id}",
                 # policy_kwargs=policy_kwargs
             )
+
+    if args.model_artifact:
+        print(f"loading model from Artifacts, \
+                version {args.model_artifact}")
+        artifact = wandb.use_artifact(f"sac_model:{args.model_artifact}")
+        artifact_dir = artifact.download()
+        model.load(os.path.join(artifact_dir, "sac.zip"))
 
     try:
         logging.info("Starting to train")
@@ -155,8 +163,8 @@ def parse_args():
                         phase (before learning starts)")
 
     # params to accomodate embedded system
-    # parser.add_argument('--model-artifact', type=str, default=None,
-    #                     help="the artifact version of the model to load")
+    parser.add_argument('--model_artifact', type=str, default=None,
+                        help="the artifact version of the model to load")
     # parser.add_argument('--rb-artifact', type=str, default=None,
     #                     help="Artifact version of the replay buffer to load")
     parser.add_argument('--train_freq',
