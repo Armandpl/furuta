@@ -6,7 +6,7 @@
 # Reason: Updating to python3... better late than never eh?
 
 from time import sleep
-
+import spidev
 
 # Usage: import LS7366R then call enc = LS7366R(CSX, CLK, BTMD)
 # CSX is either CE0 or CE1, CLK is the speed,
@@ -48,7 +48,6 @@ class LS7366R():
     # Constructor
 
     def __init__(self, CSX, CLK, BTMD, BUS):
-        import spidev
         self.counterSize = BTMD  # Sets the byte mode that will be used
 
         self.spi = spidev.SpiDev()  # Initialize object
