@@ -23,6 +23,11 @@ def main(args):
         save_code=True
     )
     args = run.config
+
+    if args.history < 2 and args.continuity_cost:
+        logging.error("Can't use continuity cost if history < 2")
+        quit()
+
     env = setup_env(args)
 
     verbose = 2 if args.debug else 0
@@ -34,8 +39,7 @@ def main(args):
                 gamma=args.gamma, batch_size=args.batch_size,
                 target_update_interval=args.target_update_interval,
                 learning_starts=args.learning_starts,
-                # use_sde=args.use_sde, use_sde_at_warmup=args.use_sde_at_warmup,
-                use_sde=False, use_sde_at_warmup=False,
+                use_sde=args.use_sde, use_sde_at_warmup=args.use_sde_at_warmup,
                 train_freq=args.train_freq, gradient_steps=args.gradient_steps,
                 tensorboard_log=f"runs/{run.id}",
                 # policy_kwargs=policy_kwargs
@@ -69,7 +73,10 @@ def setup_env(args):
     # base env
     env = gym.make(args.gym_id, fs=args.fs, fs_ctrl=args.fs_ctrl,
                    action_limiter=args.action_limiter,
-                   safety_th_lim=args.safety_th_lim)
+                   safety_th_lim=args.safety_th_lim,
+                   state_limits=args.state_limits)
+
+    wandb.run.summary["state_max"] = env.state_max
 
     # load custom sim params
     if args.gym_id == "FurutaSim-v0" and args.custom_sim:
@@ -113,7 +120,8 @@ def parse_args():
                         help='seed of the experiment')
     parser.add_argument('--total_timesteps', type=int, default=1000000,
                         help='total timesteps of the experiments')
-    parser.add_argument('--capture_video', action="store_true",
+    parser.add_argument('--capture_video',
+                        type=lambda x: bool(strtobool(x)), default=False,
                         help='weather to capture videos of the agent\
                               performances (check out `videos` folder)')
     parser.add_argument('--wandb_project', type=str, default="furuta",
@@ -138,11 +146,11 @@ def parse_args():
                         type=int, default=25e3,
                         help="when to start learning")
     parser.add_argument('--use_sde',
-                        type=lambda x:bool(strtobool(x)), default=True,
+                        type=lambda x: bool(strtobool(x)), default=True,
                         help="Whether to use generalized State Dependent Exploration (gSDE) \
                         instead of action noise exploration")
     parser.add_argument('--use_sde_at_warmup',
-                        type=lambda x:bool(strtobool(x)), default=True,
+                        type=lambda x: bool(strtobool(x)), default=True,
                         help="Whether to use gSDE instead of uniform sampling during the warm up \
                         phase (before learning starts)")
 
@@ -155,7 +163,7 @@ def parse_args():
                         type=int, default=3000,  # = 30 sec at 100hz
                         help="The frequency of training critics/q functions")
     parser.add_argument('--gradient_steps',
-                        type=int, default=400,
+                        type=int, default=-1,
                         help="How many training iterations")
 
     # env params
@@ -168,18 +176,20 @@ def parse_args():
                         -1 = infinite')
     parser.add_argument('--safety_th_lim', type=float, default=1.5,
                         help='Max motor (theta) angle in rad.')
-    parser.add_argument('--action_limiter', action="store_true",
+    parser.add_argument('--action_limiter',
+                        type=lambda x: bool(strtobool(x)), default=False,
                         help='Restrict actions')
     parser.add_argument('--state_limits', type=str, default="low",
                         help='Wether to use high or low limits. See code.')
     parser.add_argument('--reward', type=str, default="simple",
                         help='Which reward to use? See env code.')
     parser.add_argument('--continuity_cost',
-                        type=lambda x:bool(strtobool(x)), default=True,
+                        type=lambda x: bool(strtobool(x)), default=False,
                         help='If true use continuity cost from HistoryWrapper')
     parser.add_argument('--history', type=int, default=1,
                         help='If >1 use HistoryWrapper')
-    parser.add_argument('--custom_sim', action="store_true",
+    parser.add_argument('--custom_sim',
+                        type=lambda x: bool(strtobool(x)), default=True,
                         help='If specified, use params from furuta_params.py')
 
     args = parser.parse_args()
