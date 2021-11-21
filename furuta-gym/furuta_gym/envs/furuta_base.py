@@ -24,7 +24,7 @@ class FurutaBase(gym.Env):
         if state_limits == 'high':
             self.state_max = np.array([2.0, 4.0 * np.pi, 300.0, 400.0])
         elif state_limits == 'low':
-            self.state_max = np.array([2.0, 4.0 * np.pi, 30.0, 40.0])
+            self.state_max = np.array([2.5, 4.0 * np.pi, 50.0, 400.0])
 
         obs_max = np.array([1.0, 1.0, 1.0, 1.0,
                             self.state_max[2], self.state_max[3]])
@@ -95,17 +95,22 @@ class FurutaBase(gym.Env):
         rwd = self._rwd(self._state, a)
         done = not self.state_space.contains(self._state)
 
-        obs = np.float32([np.cos(self._state[0]), np.sin(self._state[0]),
-                          np.cos(self._state[1]), np.sin(self._state[1]),
-                          self._state[2], self._state[3]])
+        obs = self.get_obs()
 
         info = {"env/motor_angle": self._state[0],
                 "env/pendulum_angle": self._state[1],
                 "env/motor_angle_velocity": self._state[2],
                 "env/pendulum_angle_velocity": self._state[3],
-                "env/action": act}
+                "env/corrected_action": act,
+                "env/action": a}
 
         return obs, rwd, done, info
+    
+    def get_obs(self):
+        return np.float32([np.cos(self._state[0]), np.sin(self._state[0]),
+                          np.cos(self._state[1]), np.sin(self._state[1]),
+                          self._state[2], self._state[3]])
+
 
     def reset(self):
         raise NotImplementedError
