@@ -33,6 +33,14 @@ def main(args):
 
     verbose = 2 if args.debug else 0
     # policy_kwargs = dict(net_arch=[32, 32])
+
+    # TODO: tmp fix: w&b turns tuples into list in the config
+    # but I need to pass SAC a tuple
+    if type(args.train_freq) == list:
+        train_freq = tuple(args.train_freq)
+    else:
+        train_freq = args.train_freq
+
     model = SAC(
                 "MlpPolicy", env, verbose=verbose,
                 learning_rate=args.learning_rate, seed=args.seed,
@@ -41,7 +49,8 @@ def main(args):
                 target_update_interval=args.target_update_interval,
                 learning_starts=args.learning_starts,
                 use_sde=args.use_sde, use_sde_at_warmup=args.use_sde_at_warmup,
-                train_freq=args.train_freq, gradient_steps=args.gradient_steps,
+                sde_sample_freq=args.sde_sample_freq,
+                train_freq=train_freq, gradient_steps=args.gradient_steps,
                 tensorboard_log=f"runs/{run.id}",
                 # policy_kwargs=policy_kwargs
             )
@@ -52,6 +61,13 @@ def main(args):
         artifact = wandb.use_artifact(f"sac_model:{args.model_artifact}")
         artifact_dir = artifact.download()
         model.load(os.path.join(artifact_dir, "sac.zip"))
+
+    if args.rb_artifact:
+        print(f"loading replay buffer from Artifacts, \
+                version {args.rb_artifact}")
+        artifact = wandb.use_artifact(f"sac_replay_buffer:{args.rb_artifact}")
+        artifact_dir = artifact.download()
+        model.load_replay_buffer(os.path.join(artifact_dir, "buffer.pkl"))
 
     try:
         logging.info("Starting to train")
@@ -153,6 +169,10 @@ def parse_args():
     parser.add_argument('--learning_starts',
                         type=int, default=25e3,
                         help="when to start learning")
+    parser.add_argument('--sde_sample_freq',
+                        type=int, default=-1,
+                        help="Sample a new noise matrix every n steps when using gSDE \
+                              Default: -1 (only sample at the beginning of the rollout)")
     parser.add_argument('--use_sde',
                         type=lambda x: bool(strtobool(x)), default=True,
                         help="Whether to use generalized State Dependent Exploration (gSDE) \
@@ -165,10 +185,10 @@ def parse_args():
     # params to accomodate embedded system
     parser.add_argument('--model_artifact', type=str, default=None,
                         help="the artifact version of the model to load")
-    # parser.add_argument('--rb-artifact', type=str, default=None,
-    #                     help="Artifact version of the replay buffer to load")
+    parser.add_argument('--rb_artifact', type=str, default=None,
+                        help="Artifact version of the replay buffer to load")
     parser.add_argument('--train_freq',
-                        type=int, default=3000,  # = 30 sec at 100hz
+                        type=str, default=3000,  # = 30 sec at 100hz
                         help="The frequency of training critics/q functions")
     parser.add_argument('--gradient_steps',
                         type=int, default=-1,
@@ -200,7 +220,19 @@ def parse_args():
                         type=lambda x: bool(strtobool(x)), default=True,
                         help='If specified, use params from furuta_params.py')
 
+
     args = parser.parse_args()
+
+    # parse train freq
+    tmp = args.train_freq.split(" ")
+    freq = int(tmp[0])
+    if " " in args.train_freq:
+        unit = tmp[1]
+        args.train_freq = (freq, unit)
+    else:
+        args.train_freq = freq
+
+    
     return args
 
 
