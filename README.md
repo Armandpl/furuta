@@ -1,4 +1,4 @@
-# Furuta Pendulum
+# Furuta Pendulum [![flake8 Lint](https://github.com/Armandpl/furuta/actions/workflows/lint.yml/badge.svg)](https://github.com/Armandpl/furuta/actions/workflows/lint.yml)
 
 ![](./assets/pendulum.gif)
 
