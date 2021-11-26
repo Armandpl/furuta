@@ -14,6 +14,7 @@ import spidev
 # example: lever.Encoder(0, 1000000, 4)
 # These are the values I normally use.
 
+
 class LS7366R():
     # -------------------------------------------
     # Constants
@@ -106,7 +107,9 @@ if __name__ == "__main__":
     encoder = LS7366R(1, 1000000, 4, 1)
     try:
         while True:
-            print("Encoder count: ", str(encoder.readCounter()).zfill(8), end="\r")
+            print("Encoder count: ",
+                  str(encoder.readCounter()).zfill(8),
+                  end="\r")
             sleep(0.05)
     except KeyboardInterrupt:
         encoder.close()

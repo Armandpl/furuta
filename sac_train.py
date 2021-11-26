@@ -11,7 +11,9 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
 import wandb
 
 import furuta_gym  # noqa F420
-from furuta_gym.envs.wrappers import GentlyTerminating, HistoryWrapper, ControlFrequency
+from furuta_gym.envs.wrappers import GentlyTerminating, \
+                                     HistoryWrapper, \
+                                     ControlFrequency
 
 
 def main(args):
@@ -25,9 +27,6 @@ def main(args):
     )
     args = run.config
 
-    if args.history < 2 and args.continuity_cost:
-        logging.error("Can't use continuity cost if history < 2")
-        quit()
 
     env = setup_env(args)
 
@@ -56,14 +55,14 @@ def main(args):
             )
 
     if args.model_artifact:
-        print(f"loading model from Artifacts, \
+        logging.info(f"loading model from Artifacts, \
                 version {args.model_artifact}")
         artifact = wandb.use_artifact(f"sac_model:{args.model_artifact}")
         artifact_dir = artifact.download()
         model.load(os.path.join(artifact_dir, "sac.zip"))
 
     if args.rb_artifact:
-        print(f"loading replay buffer from Artifacts, \
+        logging.info(f"loading replay buffer from Artifacts, \
                 version {args.rb_artifact}")
         artifact = wandb.use_artifact(f"sac_replay_buffer:{args.rb_artifact}")
         artifact_dir = artifact.download()
@@ -172,7 +171,8 @@ def parse_args():
     parser.add_argument('--sde_sample_freq',
                         type=int, default=-1,
                         help="Sample a new noise matrix every n steps when using gSDE \
-                              Default: -1 (only sample at the beginning of the rollout)")
+                              Default: -1 \
+                              (only sample at the beginning of the rollout)")
     parser.add_argument('--use_sde',
                         type=lambda x: bool(strtobool(x)), default=True,
                         help="Whether to use generalized State Dependent Exploration (gSDE) \
@@ -188,11 +188,11 @@ def parse_args():
     parser.add_argument('--rb_artifact', type=str, default=None,
                         help="Artifact version of the replay buffer to load")
     parser.add_argument('--train_freq',
-                        type=str, default=3000,  # = 30 sec at 100hz
+                        type=str, default="1 episode",
                         help="The frequency of training critics/q functions")
     parser.add_argument('--gradient_steps',
                         type=int, default=-1,
-                        help="How many training iterations")
+                        help="How many training iterations.")
 
     # env params
     parser.add_argument('--fs', type=int, default=100,
@@ -220,7 +220,6 @@ def parse_args():
                         type=lambda x: bool(strtobool(x)), default=True,
                         help='If specified, use params from furuta_params.py')
 
-
     args = parser.parse_args()
 
     # parse train freq
@@ -232,10 +231,19 @@ def parse_args():
     else:
         args.train_freq = freq
 
-    
+    if args.history < 2 and args.continuity_cost:
+        logging.error("Can't use continuity cost if history < 2")
+        quit()
+
     return args
 
 
 if __name__ == "__main__":
     args = parse_args()
+
+    logging_level = logging.DEBUG if args.debug else logging.INFO
+    logging.basicConfig(
+        format='%(levelname)s: %(message)s',
+        level=logging_level
+    )
     main(args)

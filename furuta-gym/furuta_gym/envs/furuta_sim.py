@@ -124,4 +124,3 @@ class QubeDynamics:
         aldd = (a * y - b * x) / d
 
         return thdd, aldd
-
