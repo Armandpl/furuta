@@ -42,6 +42,8 @@ class FurutaReal(FurutaBase):
         self.motor_CPR = float(config["Motor Encoder"]["CPR"])
         self.pendulum_CPR = float(config["Pendulum Encoder"]["CPR"])
 
+        self._state = self._read_state()
+
     def _update_state(self, action):
         self.motor.set_speed(action[0])
 
@@ -75,51 +77,25 @@ class FurutaReal(FurutaBase):
     def get_state(self):
         return self._state
 
-    def reset(self):
-        # reset motor
-        print("Reset motor")
-        while True:
-            state = self._read_state()*180/np.pi
-            motor_angle = state[0]
-            motor_speed = state[2]
-
-            speed = 0.3
-            if abs(motor_angle) < 20:
-
-                if abs(motor_speed) > 5:
-                    # braking
-                    if motor_angle <= 0:
-                        self.motor.set_speed(-0.5)
-                    elif motor_angle > 0:
-                        self.motor.set_speed(0.5)
-
-                    sleep(10/100)
-
-                    self.motor.set_speed(0)
-
-                break
-            elif motor_angle >= 0:
-                self.motor.set_speed(-speed)
-            elif motor_angle < 0:
-                self.motor.set_speed(speed)
-
-        # wait for pendulum to reset to start position
+    def _reset_pendulum(self, tolerance=10, still_time=1, clear=True):
         print("reset pendulum")
+        tolerance = tolerance/2
         count = 0
         debug_count = 0
         while True:
             pendulum_angle = self._read_state()[1]*180/np.pi
             pendulum_angle = pendulum_angle%360
 
-            if 355 < pendulum_angle or pendulum_angle < 5:  # TODO use cos/sin instead
+            if 360-tolerance < pendulum_angle or pendulum_angle < tolerance:  # TODO use cos/sin instead
                 count += 1
                 debug_count = 0
             else:
                 count = 0
                 debug_count += 1
 
-            if count >= int(1/self.timing.dt_ctrl):
-                self.pendulum_enc.clearCounter()
+            if count >= int(still_time/self.timing.dt_ctrl):
+                if clear:
+                    self.pendulum_enc.clearCounter()
                 break
 
             if debug_count > 700:
@@ -130,8 +106,46 @@ class FurutaReal(FurutaBase):
             
             sleep(self.timing.dt_ctrl)
 
+    def reset(self):
+        # reset pendulum
+        self._reset_pendulum(40, 0.5, False)
+        # reset motor
+        print("Reset motor")
+        while True:
+            state = self._read_state()*180/np.pi
+            motor_angle = state[0]
+            motor_speed = state[2]
+
+            speed = 0.3
+            if abs(motor_angle) < 10:
+
+                if abs(motor_speed) > 10:
+                    # braking
+                    if motor_angle <= 0:
+                        self.motor.set_speed(-0.3)
+                    elif motor_angle > 0:
+                        self.motor.set_speed(0.3)
+
+                    sleep(10/100)
+
+                    self.motor.set_speed(0)
+                
+                self.motor.set_speed(0)
+
+                break
+            elif motor_angle >= 0:
+                count = 0
+                self.motor.set_speed(-speed)
+            elif motor_angle < 0:
+                count = 0
+                self.motor.set_speed(speed)
+
+        # wait for pendulum to reset to start position
+        self._reset_pendulum(10, 1, True)
+
         print("reset done")
-        return self.step(np.array([0.0]))[0]
+        self._state = self._read_state()
+        return self.get_obs()
 
     # TODO: override parent render function
     # replace by taking webcam snapshot

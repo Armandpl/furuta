@@ -17,6 +17,7 @@ class GentlyTerminating(gym.Wrapper):
             # TODO: find how to bypass sb3 monitor: tried to step env that needs reset
             # self.env.step(np.zeros(self.env.action_space.shape))
             # maybe by changing the wrappers order
+            print("episode done, killing motor.")
             self.env.motor.set_speed(0)
         return observation, reward, done, info
 
