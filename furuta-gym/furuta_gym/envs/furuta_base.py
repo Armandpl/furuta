@@ -24,7 +24,7 @@ class FurutaBase(gym.Env):
         if state_limits == 'high':
             self.state_max = np.array([2.0, 4.0 * np.pi, 300.0, 400.0])
         elif state_limits == 'low':
-            self.state_max = np.array([2.0, 4.0 * np.pi, 30.0, 40.0])
+            self.state_max = np.array([2.5, 4.0 * np.pi, 50.0, 400.0])
 
         obs_max = np.array([1.0, 1.0, 1.0, 1.0,
                             self.state_max[2], self.state_max[3]])
