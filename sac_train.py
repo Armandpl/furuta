@@ -27,7 +27,6 @@ def main(args):
     )
     args = run.config
 
-
     env = setup_env(args)
 
     verbose = 2 if args.debug else 0
