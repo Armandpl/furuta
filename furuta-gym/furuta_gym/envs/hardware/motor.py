@@ -1,5 +1,6 @@
 import Jetson.GPIO as GPIO
 
+
 class Motor():
     def __init__(self, D2, IN1, IN2, freq=500):
         self.D2 = D2
@@ -37,6 +38,7 @@ class Motor():
         self.pwm.stop()
         GPIO.cleanup()
 
+
 if __name__ == "__main__":
     from time import sleep
 
@@ -50,4 +52,3 @@ if __name__ == "__main__":
         sleep(1/3)
 
     motor.close()
-
