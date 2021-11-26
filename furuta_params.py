@@ -11,7 +11,7 @@ params = dict(
 
     # Rotary arm
     Mr=0.057,  # mass (kg)
-    Lr=0.083,  # length (m)
+    Lr=0.063,  # length (m)
     Dr=5e-6,   # viscous damping (N-m-s/rad), original: 0.0015
 
     # Pendulum link
