@@ -1,5 +1,6 @@
 import Jetson.GPIO as GPIO
 
+
 class Motor():
     def __init__(self, D2, IN1, IN2, freq=500):
         self.D2 = D2
@@ -21,7 +22,13 @@ class Motor():
         elif speed < 0:
             self.set_direction(-1)
 
-        speed = abs(speed)*100.0
+        # make sure the motor gets the minimum voltage
+        # TODO: should depend on motor specs
+        speed = abs(speed)
+        if speed > 0.0:
+            speed = 0.2 + 0.8 * speed
+
+        speed = speed*100.0
         self.pwm.ChangeDutyCycle(speed)
 
     def set_direction(self, direction):
@@ -37,6 +44,7 @@ class Motor():
         self.pwm.stop()
         GPIO.cleanup()
 
+
 if __name__ == "__main__":
     from time import sleep
 
@@ -50,4 +58,3 @@ if __name__ == "__main__":
         sleep(1/3)
 
     motor.close()
-
