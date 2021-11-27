@@ -105,12 +105,11 @@ class FurutaBase(gym.Env):
                 "env/action": a}
 
         return obs, rwd, done, info
-    
+
     def get_obs(self):
         return np.float32([np.cos(self._state[0]), np.sin(self._state[0]),
                           np.cos(self._state[1]), np.sin(self._state[1]),
                           self._state[2], self._state[3]])
-
 
     def reset(self):
         raise NotImplementedError
@@ -306,4 +305,3 @@ class CartPoleSwingUpViewer:
     def close(self):
         """Closes the underlying Viewer instance"""
         self.viewer.close()
-

@@ -73,20 +73,29 @@ class FurutaReal(FurutaBase):
 
         return state
 
-
     def get_state(self):
         return self._state
 
     def _reset_pendulum(self, tolerance=10, still_time=1, clear=True):
-        print("reset pendulum")
+        """
+        This function resets the pendulum.
+
+        :param tolerance: this is the degree windows
+                          in which we want the pendulum to be
+        :param still_time: number of seconds we want the pendulum to be
+                           in the window before considering the pendulum reset
+        :param clear: do we want to clear the encoder count once
+                      pendulum is reset
+        """
+        logging.debug("reset pendulum")
         tolerance = tolerance/2
         count = 0
         debug_count = 0
         while True:
             pendulum_angle = self._read_state()[1]*180/np.pi
-            pendulum_angle = pendulum_angle%360
+            pendulum_angle = pendulum_angle % 360
 
-            if 360-tolerance < pendulum_angle or pendulum_angle < tolerance:  # TODO use cos/sin instead
+            if 360-tolerance < pendulum_angle or pendulum_angle < tolerance:
                 count += 1
                 debug_count = 0
             else:
@@ -100,17 +109,18 @@ class FurutaReal(FurutaBase):
 
             if debug_count > 700:
                 enc_count = self.pendulum_enc.readCounter()
-                print(f"{pendulum_angle} pendulum angle, \
+                logging.debug(f"{pendulum_angle} pendulum angle, \
                               {enc_count} enc count")
                 self.pendulum_enc.clearCounter()
-            
+
             sleep(self.timing.dt_ctrl)
 
     def reset(self):
+        logging.info("Reset env...")
         # reset pendulum
         self._reset_pendulum(40, 0.5, False)
         # reset motor
-        print("Reset motor")
+        logging.debug("Reset motor")
         while True:
             state = self._read_state()*180/np.pi
             motor_angle = state[0]
@@ -129,21 +139,19 @@ class FurutaReal(FurutaBase):
                     sleep(10/100)
 
                     self.motor.set_speed(0)
-                
+
                 self.motor.set_speed(0)
 
                 break
             elif motor_angle >= 0:
-                count = 0
                 self.motor.set_speed(-speed)
             elif motor_angle < 0:
-                count = 0
                 self.motor.set_speed(speed)
 
         # wait for pendulum to reset to start position
         self._reset_pendulum(10, 1, True)
 
-        print("reset done")
+        logging.info("Reset done")
         self._state = self._read_state()
         return self.get_obs()
 
@@ -156,4 +164,3 @@ class FurutaReal(FurutaBase):
 
     def close(self):
         self.motor.close()
-
