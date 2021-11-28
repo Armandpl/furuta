@@ -15,7 +15,7 @@ class FurutaReal(FurutaBase):
     def __init__(self, fs=100, fs_ctrl=100,
                  action_limiter=False, safety_th_lim=1.5,
                  reward="simple", state_limits='low',
-                 config_file="furuta.ini"):
+                 config_file="robot.ini"):
         super().__init__(fs, fs_ctrl, action_limiter, safety_th_lim,
                          reward, state_limits)
 
