@@ -20,6 +20,7 @@ To make this robot work we built on top of existing work!
   * their VelocityFilter class to compute the angular speeds
   * their GentlyTerminating wrapper to send a zero command to the robot at the end of each episode
   * their rotary inverted pendulum simulation
+  * their ActionLimiter class
 - The arm assembly is inspired by this [YouTube video](https://www.youtube.com/watch?v=xowrt6ShdCw) by Mack Tang.
 - The visualization we use for the simulation is copy-pasted from https://github.com/angelolovatto/gym-cartpole-swingup
 - We use the [StableBaselines3](https://github.com/DLR-RM/stable-baselines3) library to train the robot. 
