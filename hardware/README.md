@@ -1,4 +1,5 @@
 # Hardware
+We tried selecting components available worldwide. Feel to open an issue if you have trouble sourcing one or if you know of a better alternative. 
 ## Bill of Materials
 | Item Name (+datasheet link)                                                                                                                                                                            | Supplier                                                                                                                                                              | Price (EUR) |
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
