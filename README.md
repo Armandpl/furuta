@@ -14,16 +14,17 @@ In this repository you will find everything you need to build [and train a rotar
 ## MLOps
 
 ## Credits
-To build this robot we leveraged existing work.
-- The we got the encoder precision and the idea to use a direct drive motor from the Quanser Qube design.
-- We also re-used a good chunk of Quanser code. Notably: 
+To make this robot work we built on top of existing work.
+- We got the encoder precision and the idea to use a direct drive motor from the [Quanser Qube design](https://quanserinc.box.com/shared/static/5wnibclu7rp6xihm7mbxqxincu6dogur.pdf).
+- We re-used a bits from [Quanser's code](https://git.ias.informatik.tu-darmstadt.de/quanser/clients/-/tree/master/quanser_robots/qube). Notably: 
   * their VelocityFilter class to compute the angular speeds
   * their GentlyTerminating wrapper to send a zero command to the robot at the end of each episode
-  * their simulation
-- The arm assembly is inspired by this YouTube video.
+  * their rotary inverted pendulum simulation
+- The arm assembly is inspired by this [YouTube video](https://www.youtube.com/watch?v=xowrt6ShdCw) by Mack Tang.
 - The visualization we use for the simulation is copy-pasted from https://github.com/angelolovatto/gym-cartpole-swingup
-- We use the StableBaselines3 library to train the robot. 
-- We implemented tricks from Antonin Raffin's talk at rlvs2021.
+- We use the [StableBaselines3](https://github.com/DLR-RM/stable-baselines3) library to train the robot. 
+- We implemented tricks from [Antonin Raffin's talk at RLVS 2021](https://www.youtube.com/watch?v=Ikngt0_DXJg).
   * HistoryWrapper and continuity cost
   * gSDE
+- We use [code from Federico Bolanos](https://github.com/fbolanos/LS7366R/blob/master/LS7366R.py) to read the encoder counters.
 
