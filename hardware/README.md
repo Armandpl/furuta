@@ -1,6 +1,8 @@
 # Hardware
-We tried selecting components available worldwide. Feel to open an issue if you have trouble sourcing one or if you know of a better alternative. 
+
 ## Bill of Materials
+We tried selecting components available worldwide. Feel to open an issue if you have trouble sourcing one or if you know of a better alternative. 
+
 | Item Name (+datasheet link)                                                                                                                                                                            | Supplier                                                                                                                                                              | Price (EUR) |
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
 | [Nvidia Jetson Nano 2GB Developer Kit](https://developer.nvidia.com/embedded/learn/jetson-nano-2gb-devkit-user-guide)                                                                                  | [Amazon.fr](https://www.amazon.fr/Waveshare-Jetson-Developer-Hands-Robotics/dp/B08M5J1WM2)                                                                            | 87.99       |
