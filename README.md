@@ -14,9 +14,9 @@ In this repository you will find everything you need to build [and train a rotar
 ## MLOps
 
 ## Credits
-To make this robot work we built on top of existing work.
+To make this robot work we built on top of existing work!
 - We got the encoder precision and the idea to use a direct drive motor from the [Quanser Qube design](https://quanserinc.box.com/shared/static/5wnibclu7rp6xihm7mbxqxincu6dogur.pdf).
-- We re-used a bits from [Quanser's code](https://git.ias.informatik.tu-darmstadt.de/quanser/clients/-/tree/master/quanser_robots/qube). Notably: 
+- We re-used bits from [Quanser's code](https://git.ias.informatik.tu-darmstadt.de/quanser/clients/-/tree/master/quanser_robots/qube). Notably: 
   * their VelocityFilter class to compute the angular speeds
   * their GentlyTerminating wrapper to send a zero command to the robot at the end of each episode
   * their rotary inverted pendulum simulation
@@ -25,6 +25,6 @@ To make this robot work we built on top of existing work.
 - We use the [StableBaselines3](https://github.com/DLR-RM/stable-baselines3) library to train the robot. 
 - We implemented tricks from [Antonin Raffin's talk at RLVS 2021](https://www.youtube.com/watch?v=Ikngt0_DXJg).
   * HistoryWrapper and continuity cost
-  * gSDE
+  * [gSDE](https://arxiv.org/abs/2005.05719)
 - We use [code from Federico Bolanos](https://github.com/fbolanos/LS7366R/blob/master/LS7366R.py) to read the encoder counters.
 
