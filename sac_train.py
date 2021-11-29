@@ -102,7 +102,7 @@ def setup_env(args):
 
     # load custom sim params
     if args.gym_id == "FurutaSim-v0" and args.custom_sim:
-        from furuta_params import params
+        from sim_params import params
         env.dyn.params = params
         logging.info(f"Loaded sim params: \n{env.dyn.params}")
         wandb.run.summary["sim_params"] = params
