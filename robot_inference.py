@@ -36,8 +36,7 @@ class Robot():
                 self.model_producer_run.config[attr] = value
 
         # convert dict into object
-        config = self.model_producer_run.config
-        config = namedtuple("config", config.keys())(*config.values())
+        config = dict2obj(self.model_producer_run.config)
         wandb.summary["env_config"] = config
         self.env = setup_env(config)
 
@@ -55,6 +54,10 @@ class Robot():
                 obs = self.env.reset()
                 break
         return total_reward
+
+
+def dict2obj(d):
+    return namedtuple("d", d.keys())(*d.values())
 
 
 def main(args):
