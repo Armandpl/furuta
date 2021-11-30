@@ -1,6 +1,8 @@
 import argparse
+import configparser
 from distutils.util import strtobool
 import logging
+from pathlib import Path
 import os
 
 import gym
@@ -20,7 +22,7 @@ def main(args):
     run = wandb.init(
         project=args.wandb_project,
         entity=args.wandb_entity,
-        config=vars(args),
+        config=args,
         sync_tensorboard=True,
         monitor_gym=args.capture_video,
         save_code=True
@@ -30,14 +32,6 @@ def main(args):
     env = setup_env(args)
 
     verbose = 2 if args.debug else 0
-    # policy_kwargs = dict(net_arch=[32, 32])
-
-    # TODO: tmp fix: w&b turns tuples into list in the config
-    # but I need to pass SAC a tuple
-    if type(args.train_freq) == list:
-        train_freq = tuple(args.train_freq)
-    else:
-        train_freq = args.train_freq
 
     model = SAC(
                 "MlpPolicy", env, verbose=verbose,
@@ -48,24 +42,20 @@ def main(args):
                 learning_starts=args.learning_starts,
                 use_sde=args.use_sde, use_sde_at_warmup=args.use_sde_at_warmup,
                 sde_sample_freq=args.sde_sample_freq,
-                train_freq=train_freq, gradient_steps=args.gradient_steps,
+                train_freq=(args.train_freq, args.train_freq_unit),
+                gradient_steps=args.gradient_steps,
                 tensorboard_log=f"runs/{run.id}",
-                # policy_kwargs=policy_kwargs
             )
 
     if args.model_artifact:
-        logging.info(f"loading model from Artifacts, \
-                version {args.model_artifact}")
-        artifact = wandb.use_artifact(f"sac_model:{args.model_artifact}")
-        artifact_dir = artifact.download()
-        model.load(os.path.join(artifact_dir, "sac.zip"))
+        model.load(download_artifact_file(f"sac_model:{args.model_artifact}",
+                                          "sac.zip"))
 
     if args.rb_artifact:
-        logging.info(f"loading replay buffer from Artifacts, \
-                version {args.rb_artifact}")
-        artifact = wandb.use_artifact(f"sac_replay_buffer:{args.rb_artifact}")
-        artifact_dir = artifact.download()
-        model.load_replay_buffer(os.path.join(artifact_dir, "buffer.pkl"))
+        rb_path = download_artifact_file(
+                    f"sac_replay_buffer:{args.model_artifact}",
+                    "buffer.pkl")
+        model.load_replay_buffer(rb_path)
 
     try:
         logging.info("Starting to train")
@@ -73,19 +63,13 @@ def main(args):
     except KeyboardInterrupt:
         logging.info("Interupting training")
 
-    logging.info("Saving model")
     model_path = f"runs/{run.id}/models/sac.zip"
     model.save(model_path)
-    artifact = wandb.Artifact("sac_model", type="model")
-    artifact.add_file(model_path)
-    wandb.log_artifact(artifact)
+    upload_file_to_artifacts(model_path, "sac_model", "model")
 
-    logging.info("Saving replay buffer")
     buffer_path = f"runs/{run.id}/buffers/buffer.pkl"
     model.save_replay_buffer(buffer_path)
-    artifact = wandb.Artifact("sac_replay_buffer", type="replay buffer")
-    artifact.add_file(buffer_path)
-    wandb.log_artifact(artifact)
+    upload_file_to_artifacts(buffer_path, "sac_replay_buffer", "replay buffer")
 
     env.close()
     run.finish()
@@ -102,10 +86,9 @@ def setup_env(args):
 
     # load custom sim params
     if args.gym_id == "FurutaSim-v0" and args.custom_sim:
-        from sim_params import params
-        env.dyn.params = params
+        load_sim_params(env, args.custom_sim)
         logging.info(f"Loaded sim params: \n{env.dyn.params}")
-        wandb.run.summary["sim_params"] = params
+        wandb.run.summary["sim_params"] = env.dyn.params
 
     if args.episode_length != -1:
         env = TimeLimit(env, args.episode_length)
@@ -115,8 +98,7 @@ def setup_env(args):
 
     env = Monitor(env)
 
-    # if robot
-    if args.gym_id == "FurutaReal-v0":
+    if args.gym_id == "FurutaReal-v0":  # if robot
         env = GentlyTerminating(env)
         env = ControlFrequency(env, env.timing.dt_ctrl)
 
@@ -129,6 +111,45 @@ def setup_env(args):
                                video_length=300)
 
     return env
+
+
+def download_artifact_file(artifact_alias, filename):
+    """
+    Download artifact and returns path to filename.
+
+    :param artifact_name: wandb artifact alias
+    :param filename: filename in the artifact
+    """
+    logging.info(f"loading {filename} from {artifact_alias}")
+
+    artifact = wandb.use_artifact(artifact_alias)
+    artifact_dir = Path(artifact.download())
+    filepath = artifact_dir / filename
+
+    assert filepath.is_file(), f"{artifact_alias} doesn't contain {filename}"
+
+    return filepath
+
+
+def upload_file_to_artifacts(pth, artifact_name, artifact_type):
+    logging.info(f"Saving {pth} to {artifact_name}")
+    if not isinstance(pth, Path):
+        pth = Path(pth)
+
+    assert os.path.isfile(pth), f"{pth} is not a file"
+
+    artifact = wandb.Artifact(artifact_name, type=artifact_type)
+    artifact.add_file(pth)
+    wandb.log_artifact(artifact)
+
+
+def load_sim_params(env, param_pth):
+    config = configparser.ConfigParser()
+    config = config["DEFAULT"]
+
+    # convert from str to float
+    params = {k: float(v) for k, v in config.items()}
+    env.dyn.params = params
 
 
 def parse_args():
@@ -187,8 +208,11 @@ def parse_args():
     parser.add_argument('--rb_artifact', type=str, default=None,
                         help="Artifact version of the replay buffer to load")
     parser.add_argument('--train_freq',
-                        type=str, default="1 episode",
+                        type=int, default=1,
                         help="The frequency of training critics/q functions")
+    parser.add_argument('--train_freq_unit',
+                        type=str, default="episode",
+                        help="The frequency unit")
     parser.add_argument('--gradient_steps',
                         type=int, default=-1,
                         help="How many training iterations.")
@@ -216,19 +240,10 @@ def parse_args():
     parser.add_argument('--history', type=int, default=1,
                         help='If >1 use HistoryWrapper')
     parser.add_argument('--custom_sim',
-                        type=lambda x: bool(strtobool(x)), default=True,
-                        help='If specified, use params from furuta_params.py')
+                        type=str, default=None,
+                        help='Use params from the provided file.')
 
     args = parser.parse_args()
-
-    # parse train freq
-    tmp = args.train_freq.split(" ")
-    freq = int(tmp[0])
-    if " " in args.train_freq:
-        unit = tmp[1]
-        args.train_freq = (freq, unit)
-    else:
-        args.train_freq = freq
 
     if args.history < 2 and args.continuity_cost:
         logging.error("Can't use continuity cost if history < 2")
