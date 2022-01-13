@@ -12,15 +12,17 @@ In this repository you will find everything you need to build [and train a rotar
 ## Motivations and Goals
 - There are many ([hundreds!](https://www.youtube.com/results?search_query=furuta+pendulum)) videos of rotary inverted pendulum on the internet but I couldn't find good documentation on how to build one and how to control one. This projects aims to make building a furuta pendulum **affordable and reproducible**.
 - I wanted to learn about RL. Balancing a pendulum is kind of the RL "hello world", it seemed like a good starting point.
-- Seems like a good platform to run RL experiments  (offline RL? [transfer from sim to robot?](https://www.youtube.com/watch?v=aTDkYFZFWug))
 
 ## Getting Started
-1. Get the supplies
+1. [Get the supplies](https://github.com/Armandpl/furuta/blob/master/hardware/README.md)
 2. Follow the hardware instructions
 3. Follow the software instructions
 4. Run experiments/train robot
 
+If you have any question feel free to open an issue or DM me [@armand_dpl](twitter.com/armand_dpl).
+
 ## MLOps
+During this project we leveraged [Weights and Biases](https://wandb.ai/site) MLOps to make our life easier. You can find our experiments, pre-trained models and reports [on our dashboard](https://wandb.ai/armandpl/furuta). You can also read more about [Training Repoducible Robots with W&B here](https://wandb.ai/armandpl/furuta/reports/Training-Reproducible-Robots-with-W-B--VmlldzoxMTY5NTM5).
 
 ## Credits
 To make this robot work we built on top of existing work!
