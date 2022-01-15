@@ -22,7 +22,7 @@ In this repository you will find everything you need to build [and train a rotar
 If you have any question feel free to open an issue or DM me [@armand_dpl](twitter.com/armand_dpl).
 
 ## MLOps
-During this project we leveraged [Weights and Biases](https://wandb.ai/site) MLOps to make our life easier. You can find our experiments, pre-trained models and reports [on our dashboard](https://wandb.ai/armandpl/furuta). You can also read more about [Training Repoducible Robots with W&B here](https://wandb.ai/armandpl/furuta/reports/Training-Reproducible-Robots-with-W-B--VmlldzoxMTY5NTM5).
+During this project we leveraged [Weights and Biases](https://wandb.ai/site) MLOps tools to make our life easier. You can find our experiments, pre-trained models and reports [on our dashboard](https://wandb.ai/armandpl/furuta). You can also read more about [Training Repoducible Robots with W&B here](https://wandb.ai/armandpl/furuta/reports/Training-Reproducible-Robots-with-W-B--VmlldzoxMTY5NTM5).
 
 ## Credits
 To make this robot work we built on top of existing work!
