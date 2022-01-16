@@ -37,5 +37,5 @@ To make this robot work we built on top of existing work!
 - We implemented tricks from [Antonin Raffin's talk at RLVS 2021](https://www.youtube.com/watch?v=Ikngt0_DXJg).
   * HistoryWrapper and continuity cost
   * [gSDE](https://arxiv.org/abs/2005.05719)
-- We use [code from Federico Bolanos](https://github.com/fbolanos/LS7366R/blob/master/LS7366R.py) to read the encoder counters.
+- We use [code from Federico Bolanos](https://github.com/fbolanos/LS7366R/blob/master/LS7366R.py) to read the encoders counters.
 
