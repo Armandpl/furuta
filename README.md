@@ -10,8 +10,8 @@ In this repository you will find everything you need to build [and train a rotar
 - [Credits](#credits)
 
 ## Motivations and Goals
-- There are many ([hundreds!](https://www.youtube.com/results?search_query=furuta+pendulum)) videos of rotary inverted pendulum on the internet but I couldn't find good documentation on how to build one and how to control one. This projects aims to make building a furuta pendulum **affordable and reproducible**.
-- I wanted to learn about RL. Balancing a pendulum is kind of the RL "hello world", it seemed like a good starting point.
+- There are many ([hundreds!](https://www.youtube.com/results?search_query=furuta+pendulum)) videos of rotary inverted pendulum on the internet but we couldn't find good documentation on how to build one and how to control one. This projects aims to make building a furuta pendulum **affordable and reproducible**.
+- We wanted to learn about RL. Balancing a pendulum is kind of the RL "hello world", it seemed like a good starting point.
 
 ## Getting Started
 1. [Get the supplies](https://github.com/Armandpl/furuta/blob/master/hardware/README.md)
