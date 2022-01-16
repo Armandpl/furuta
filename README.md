@@ -14,10 +14,9 @@ In this repository you will find everything you need to build [and train a rotar
 - We wanted to learn about RL. Balancing a pendulum is kind of the RL "hello world", it seemed like a good starting point.
 
 ## Getting Started
-1. [Get the supplies](https://github.com/Armandpl/furuta/blob/master/hardware/README.md)
-2. Follow the hardware instructions
-3. Follow the software instructions
-4. Run experiments/train robot
+1. [Get the supplies and follow the hardware instructions](https://github.com/Armandpl/furuta/tree/master/hardware)
+2. Follow the software instructions
+3. Run experiments/train robot
 
 If you have any question feel free to open an issue or DM me [@armand_dpl](twitter.com/armand_dpl).
 
