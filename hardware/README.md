@@ -31,3 +31,31 @@ We tried selecting components available worldwide. Feel to open an issue if you 
 - A soldering iron to set the threaded inserts and solder connectors.
 - A Dupont Crimping Kit (AWG28-18) to make nice wires and connectors. I got mine [from Amazon](https://www.amazon.fr/Kamtop-Sertissage-Sertisseuse-Connecteurs-0-1-1-0mm²/dp/B078K9DT69) for <30EUR.
 - A decent wire stripper also helps. I like [this one](https://www.amazon.fr/Jokari-T20050-Pince-dénuder-automatique/dp/B002BDNL4Q/) very much.
+
+## Assembly Instructions
+These instructions are quite brief, if you're missing anything DM me [@armand_dpl](https://twitter.com/armand_dpl).
+
+### 3D Print the Mechanical Assembly
+- Print all of the STLs under `/CAD/stl`
+  - Print the motor_mount.stl at 100% infill
+  - Print the rest at 35% infill with 2 walls.
+  - Print shaft_collar.stl twice 
+  - Pause the weights.stl print at z=?mm, insert the M? nut and resume the print. The procedure will depend on your printer and slicer software.
+- Insert the threaded inserts in the weight, arm and shaft collars prints.
+
+### Assemble the Robot
+- Secure the motor to its motor mount using two screws and one zip-tie.
+- Screw the motor mount into the wood scrap (or any heavy object you wish to use as the robot base).
+- Press the two bearing into the arm print
+- Slide the arm onto the motor shaft. The shaft should be D-shaped and the arm print should have a D-shaped hole. Match those then secure the arm by tightening one screw through the threaded insert.
+- Bend your 8mm aluminium shaft, pass it throught the bearings and secure it using the shaft collars. The aluminium shaft might be slightly to big for the bearings, if so sand it lightly until it fits.
+- Attach the pendulum encoder to the shaft. Follow the instructions from the documentation to do so.
+- Secure the weight to the end of the shaft.
+
+### Connect the Electronics
+- Connect both counter chips to the SPI bus on the Jetson Nano. I used one bus for each counter chip but using only one should work. **Note which bus they are connected to and which Chip Select pins you used.**
+- Connect the motor encoder to one counter chip.
+- Connect the pendulum encoder to the other counter chip through the slip ring.
+- __wip: add motor driver instructions + double check everything, burned one rpi by inverting vcc and vin which are literally next to each other__
+- write the config file __wip explain how to write config file + check everything in the gym is derived from the config__
+
