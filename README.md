@@ -15,8 +15,8 @@ In this repository you will find everything you need to build [and train a rotar
 
 ## Getting Started
 1. [Get the supplies and follow the hardware instructions](https://github.com/Armandpl/furuta/tree/master/hardware)
-2. Follow the software instructions
-3. Run experiments/train robot
+2. [Follow the software instructions](https://github.com/Armandpl/furuta/tree/master/software)
+3. Deploy pre-trained models, run experiments and train the robot
 
 If you have any question feel free to open an issue or DM me [@armand_dpl](twitter.com/armand_dpl).
 
