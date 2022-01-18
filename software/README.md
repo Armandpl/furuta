@@ -7,14 +7,13 @@ Follow the instructions at [https://developer.nvidia.com/embedded/learn/get-star
 ## 2. Setup a virtualenv
 I recommend you use a virtual env to isolate this project dependencies from your system.  
 ```bash
-sudo apt install python3-pip
-sudo apt install -y python3-venv
+sudo apt install -y python3-pip python3-venv
 python3 -m venv ~/python-envs/frt
 source ~/python-envs/frt/bin/activate
 ```
 
 ## 3. Install torch
-Follow the instructions at [https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-8-0-now-available/](https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-8-0-now-available)
+Follow the instructions at [https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-10-now-available](https://forums.developer.nvidia.com/t/pytorch-for-jetson-version-1-10-now-available)
 
 ## 4. Install Jetson.GPIO
 Follow instructions at [https://pypi.org/project/Jetson.GPIO/](https://pypi.org/project/Jetson.GPIO/)
