@@ -30,4 +30,5 @@ You can deploy the train model with:
 `python robot_inference.py v204`  
 
 Or train a new model with:  
-`python sac_train.py --action_limiter True --continuity_cost True --history 2 --state_limits low --train_freq "1 episode" --gym_id FurutaReal-v0 --episode_length 1000 --fs 50 --fs_ctrl 50 --learning_starts 500 --sde_sample_freq 64`
+`python sac_train.py --action_limiter True --continuity_cost True --history 2 --state_limits low --train_freq "1 episode" --gym_id FurutaReal-v0 --episode_length 1000 --fs 50 --fs_ctrl 50 --learning_starts 500 --sde_sample_freq 64`  
+**Note**: If training on the physical robot, make sure the train_freq is "n episode". We can only turn off the robot between episodes, if you try training every n steps the robot while continue spinning while we update the policy.
