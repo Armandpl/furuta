@@ -23,3 +23,11 @@ Follow instructions at [https://pypi.org/project/Jetson.GPIO/](https://pypi.org/
 
 ## 6. Activate the SPI bus and PWM pins
 Use the [Jetson IO utility](https://docs.nvidia.com/jetson/l4t/index.html#page/Tegra%20Linux%20Driver%20Package%20Development%20Guide/hw_setup_jetson_io.html) to activate the SPI bus and one PWM pin to control the motor.
+
+## 7. Train/Deploy
+
+You can deploy the train model with:  
+`python robot_inference.py v204`  
+
+Or train a new model with:  
+`python sac_train.py --action_limiter True --continuity_cost True --history 2 --state_limits low --train_freq "1 episode" --gym_id FurutaReal-v0 --episode_length 1000 --fs 50 --fs_ctrl 50 --learning_starts 500 --sde_sample_freq 64`
