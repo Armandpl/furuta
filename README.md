@@ -40,5 +40,5 @@ To make this robot work we built on top of existing work!
 - We use [code from Federico Bolanos](https://github.com/fbolanos/LS7366R/blob/master/LS7366R.py) to read the encoders counters.
 
 ## Authors
-[Armand du Parc Locmaria](https://armandpl.com)
+[Armand du Parc Locmaria](https://armandpl.com)  
 [Pierre Fabre](https://www.linkedin.com/in/p-fabre/)
