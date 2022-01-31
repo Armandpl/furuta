@@ -56,6 +56,6 @@ These instructions are quite brief, if you're missing anything DM me [@armand_dp
 - Connect both counter chips to the SPI bus on the Jetson Nano. I used one bus for each counter chip but using only one should work. **Note which bus they are connected to and which Chip Select pins you used.**
 - Connect the motor encoder to one counter chip.
 - Connect the pendulum encoder to the other counter chip through the slip ring.
-- __wip: add motor driver instructions + double check everything, burned one rpi by inverting vcc and vin which are literally next to each other__
-- write the config file __wip explain how to write config file + check everything in the gym is derived from the config__
+- _WIP: add motor driver instructions + double check everything, burned one rpi by inverting vcc and vin which are literally next to each other_
+- write the config file _WIP explain how to write config file + check everything in the gym is derived from the config_
 
