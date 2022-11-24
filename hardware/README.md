@@ -37,10 +37,10 @@ These instructions are quite brief, if you're missing anything DM me [@armand_dp
 
 ### 3D Print the Mechanical Assembly
 - Print all of the STLs under `/CAD/stl`
-  - Print the motor_mount.stl at 100% infill
+  - Print `motor_mount.stl` at 100% infill
   - Print the rest at 35% infill with 2 walls.
-  - Print shaft_collar.stl twice 
-  - Pause the weights.stl print at z=10mm, insert the M10 nut and resume the print. The procedure will depend on your printer and slicer software.
+  - Print `shaft_collar.stl` twice 
+  - Pause the `weights.stl` print at `z=10mm`, insert the M10 nut and resume the print. The procedure will depend on your printer and slicer software.
 - Insert the threaded inserts in the weight, arm and shaft collars prints.
 
 ### Assemble the Robot
