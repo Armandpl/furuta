@@ -48,7 +48,7 @@ These instructions are quite brief, if you're missing anything DM me [@armand_dp
 - Screw the motor mount into the wood scrap (or any heavy object you wish to use as the robot base).
 - Press the two bearing into the arm print
 - Slide the arm onto the motor shaft. The shaft should be D-shaped and the arm print should have a D-shaped hole. Match those then secure the arm by tightening one screw through the threaded insert.
-- Bend your 8mm aluminium shaft, pass it throught the bearings and secure it using the shaft collars. The aluminium shaft might be slightly to big for the bearings, if so sand it lightly until it fits.
+- Bend your 8mm aluminium shaft, pass it throught the bearings and secure it using the shaft collars. The aluminium shaft might be slightly too big for the bearings, if so sand it lightly until it fits.
 - Attach the pendulum encoder to the shaft. Follow the instructions from the documentation to do so.
 - Secure the weight to the end of the shaft.
 
