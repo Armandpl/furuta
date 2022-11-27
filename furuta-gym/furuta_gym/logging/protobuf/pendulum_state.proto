@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message PendulumState {
+  float theta = 1; // motor
+  float alpha = 2; // pendulum
+  float theta_dot = 3;
+  float alpha_dot = 4;
+}
