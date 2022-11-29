@@ -7,9 +7,14 @@ from gym.utils import seeding
 
 from .common import LabeledBox, Timing
 
+THETA = 0
+ALPHA = 1
+THETA_DOT = 2
+ALPHA_DOT = 3
+
 
 class FurutaBase(gym.Env):
-    metadata = {"render.modes": ["rgb_array"]}
+    metadata = {"render.modes": ["rgb_array"]}  # TODO add headless mode
 
     def __init__(self, fs, fs_ctrl, action_limiter, safety_th_lim,
                  reward, state_limits):
@@ -97,18 +102,20 @@ class FurutaBase(gym.Env):
 
         obs = self.get_obs()
 
-        info = {"env/motor_angle": self._state[0],
-                "env/pendulum_angle": self._state[1],
-                "env/motor_angle_velocity": self._state[2],
-                "env/pendulum_angle_velocity": self._state[3],
-                "env/corrected_action": act,
-                "env/action": a}
+        info = {"motor_angle": float(self._state[THETA]),
+                "pendulum_angle": float(self._state[ALPHA]),
+                "motor_angle_velocity": float(self._state[THETA_DOT]),
+                "pendulum_angle_velocity": float(self._state[ALPHA_DOT]),
+                "reward": float(rwd),
+                "done": bool(done),
+                "corrected_action": float(act),  # limited action
+                "action": float(a)}  # policy output
 
         return obs, rwd, done, info
 
     def get_obs(self):
-        return np.float32([np.cos(self._state[0]), np.sin(self._state[0]),
-                          np.cos(self._state[1]), np.sin(self._state[1]),
+        return np.float32([np.cos(self._state[THETA]), np.sin(self._state[THETA]),
+                          np.cos(self._state[ALPHA]), np.sin(self._state[ALPHA]),
                           self._state[2], self._state[3]])
 
     def reset(self):

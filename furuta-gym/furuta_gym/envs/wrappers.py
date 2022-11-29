@@ -1,10 +1,14 @@
 import logging
 import time
+from pathlib import Path
+from typing import Union
 
 import gym
 from gym.spaces import Box
 import numpy as np
 import wandb
+from mcap_protobuf.writer import Writer
+from furuta_gym.logging.protobuf.pendulum_state_pb2 import PendulumState
 
 
 class GentlyTerminating(gym.Wrapper):
@@ -19,6 +23,40 @@ class GentlyTerminating(gym.Wrapper):
         return observation, reward, done, info
 
     def reset(self):
+        return self.env.reset()
+
+
+class MCAPWriter(gym.Wrapper):
+    def __init__(self, env: gym.Env, log_dir: Union[str, Path]):
+        super().__init__(env)
+        if isinstance(log_dir, str):
+            self.log_dir = Path(log_dir)
+        else:
+            self.log_dir = log_dir
+
+        self.episodes = 0
+
+    def step(self, action):
+        observation, reward, done, info = self.env.step(action)
+        self.mcap_writer.write_message(
+            topic="/pendulum_state",
+            message=PendulumState(**info),
+            log_time=round(time.time()*1000),  #  TODO check that's the right clock
+            publish_time=round(time.time()*1000),
+        )
+
+        return observation, reward, done, info
+
+    def reset(self):
+        # create log dir if doesn't exist
+        if not self.log_dir.exists():
+            self.log_dir.mkdir(parents=True)
+        # instantiate a new MCAP writer
+        fname = f"ep{self.episodes}_{time.strftime('%Y%m%d-%H%M%S')}.mcap"
+        f = open(self.log_dir / fname, "wb")
+        self.mcap_writer = Writer(f)
+
+        self.episodes += 1
         return self.env.reset()
 
 
