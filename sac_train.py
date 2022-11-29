@@ -15,7 +15,8 @@ import wandb
 import furuta_gym  # noqa F420
 from furuta_gym.envs.wrappers import GentlyTerminating, \
                                      HistoryWrapper, \
-                                     ControlFrequency
+                                     ControlFrequency, \
+                                     MCAPWriter
 
 
 def main(args):
@@ -90,6 +91,9 @@ def setup_env(args):
         logging.info(f"Loaded sim params: \n{env.dyn.params}")
         wandb.run.summary["sim_params"] = env.dyn.params
 
+    if args.log_mcap:
+        env = MCAPWriter(env, f"./data/{wandb.run.id}")
+
     if args.episode_length != -1:
         env = TimeLimit(env, args.episode_length)
 
@@ -103,9 +107,10 @@ def setup_env(args):
         env = ControlFrequency(env, env.timing.dt_ctrl)
 
     if args.capture_video:
-        import pyvirtualdisplay
+        # TODO add headleas arg, depends on the machine
+        # import pyvirtualdisplay
+        # pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
         env = DummyVecEnv([lambda: env])
-        pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
         env = VecVideoRecorder(env, f"videos/{wandb.run.id}",
                                record_video_trigger=lambda x: x % 30000 == 0,
                                video_length=300)
@@ -165,8 +170,11 @@ def parse_args():
                         help='total timesteps of the experiments')
     parser.add_argument('--capture_video',
                         type=lambda x: bool(strtobool(x)), default=False,
-                        help='weather to capture videos of the agent\
-                              performances (check out `videos` folder)')
+                        help='capture videos of the agent\
+                            (check out `videos` folder)')
+    parser.add_argument('--log_mcap',
+                        type=lambda x: bool(strtobool(x)), default=False,
+                        help='log mcap data')
     parser.add_argument('--wandb_project', type=str, default="furuta",
                         help="the wandb's project name")
     parser.add_argument('--wandb_entity', type=str, default=None,
