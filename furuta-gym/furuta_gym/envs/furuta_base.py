@@ -3,9 +3,8 @@ from dataclasses import dataclass
 
 import numpy as np
 import gym
-from gym.utils import seeding
 
-from .common import LabeledBox, Timing
+from furuta_gym.common import LabeledBox, Timing
 
 THETA = 0
 ALPHA = 1
@@ -16,12 +15,10 @@ ALPHA_DOT = 3
 class FurutaBase(gym.Env):
     metadata = {"render.modes": ["rgb_array"]}  # TODO add headless mode
 
-    def __init__(self, fs, fs_ctrl, action_limiter, safety_th_lim,
-                 reward, state_limits):
+    def __init__(self, fs, action_limiter, safety_th_lim, state_limits):
 
         self._state = None
-        self.timing = Timing(fs, fs_ctrl)
-        self.rwd_name = reward
+        self.timing = Timing(fs)
         self.viewer = None
 
         act_max = np.array([1.0])
@@ -53,40 +50,22 @@ class FurutaBase(gym.Env):
         else:
             self._lim_act = None
 
-        # Initialize random number generator
-        self._np_random = None
-        self.seed()
-
     def _ctrl_step(self, a):
         x = self._state
         a_cmd = None
 
-        for _ in range(self.timing.n_sim_per_ctrl):
-            if self._lim_act is not None:
-                a_cmd = self._lim_act(x, a)
-            else:
-                a_cmd = a
-            x = self._update_state(a_cmd)
+        if self._lim_act is not None:
+            a_cmd = self._lim_act(x, a)
+        else:
+            a_cmd = a
+        x = self._update_state(a_cmd[0])
 
         return x, a_cmd  # return the last applied (clipped) command
 
-    def _rwd(self, state, a):
-        th, al, thd, ald = state
+    def _reward(self, state):
+        _, al, _, _ = state
 
-        al_mod = (al % 2 * np.pi) - np.pi
-        if self.rwd_name == "quanser":
-            cost = al_mod**2 + 5e-3*ald**2 + 1e-1*th**2
-            + 2e-2*thd**2 + 12*3e-3*a[0]**2
-
-            rwd = np.exp(-cost) * self.timing.dt_ctrl
-        elif self.rwd_name == "simple":
-            rwd = (1 + -np.cos(al, dtype=np.float32)) / 2
-
-        return rwd
-
-    def seed(self, seed=None):
-        self._np_random, seed = seeding.np_random(seed)
-        return [seed]
+        return (1 + -np.cos(al, dtype=np.float32)) / 2
 
     def step(self, a):
         assert a is not None, "Action should be not None"
@@ -97,7 +76,7 @@ class FurutaBase(gym.Env):
 
         self._state, act = self._ctrl_step(a)
 
-        rwd = self._rwd(self._state, a)
+        rwd = self._reward(self._state)
         done = not self.state_space.contains(self._state)
 
         obs = self.get_obs()
@@ -115,10 +94,13 @@ class FurutaBase(gym.Env):
 
     def get_obs(self):
         return np.float32([np.cos(self._state[THETA]), np.sin(self._state[THETA]),
-                          np.cos(self._state[ALPHA]), np.sin(self._state[ALPHA]),
-                          self._state[2], self._state[3]])
+                           np.cos(self._state[ALPHA]), np.sin(self._state[ALPHA]),
+                           self._state[THETA_DOT], self._state[ALPHA_DOT]])
 
     def reset(self):
+        raise NotImplementedError
+
+    def _update_state(self, a):
         raise NotImplementedError
 
     def render(self, mode="rgb_array"):
