@@ -13,10 +13,10 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
 import wandb
 
 import furuta_gym  # noqa F420
-from furuta_gym.envs.wrappers import GentlyTerminating, \
+from furuta_gym.wrappers import GentlyTerminating, \
                                      HistoryWrapper, \
                                      ControlFrequency, \
-                                     MCAPWriter
+                                     MCAPLogger
 
 
 def main(args):
@@ -48,6 +48,8 @@ def main(args):
                 tensorboard_log=f"runs/{run.id}",
             )
 
+    # TODO seed everything
+
     if args.model_artifact:
         model.load(download_artifact_file(f"sac_model:{args.model_artifact}",
                                           "sac.zip"))
@@ -78,7 +80,7 @@ def main(args):
 
 def setup_env(args):
     # base env
-    env = gym.make(args.gym_id, fs=args.fs, fs_ctrl=args.fs_ctrl,
+    env = gym.make(args.gym_id, fs=args.fs,
                    action_limiter=args.action_limiter,
                    safety_th_lim=args.safety_th_lim,
                    state_limits=args.state_limits)
@@ -92,7 +94,11 @@ def setup_env(args):
         wandb.run.summary["sim_params"] = env.dyn.params
 
     if args.log_mcap:
-        env = MCAPWriter(env, f"./data/{wandb.run.id}")
+        env = MCAPLogger(
+            env, 
+            f"./data/{wandb.run.id}",
+            use_sim_time=(args.gym_id == "FurutaSim-v0")
+        )
 
     if args.episode_length != -1:
         env = TimeLimit(env, args.episode_length)
@@ -112,7 +118,7 @@ def setup_env(args):
         # pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
         env = DummyVecEnv([lambda: env])
         env = VecVideoRecorder(env, f"videos/{wandb.run.id}",
-                               record_video_trigger=lambda x: x % 30000 == 0,
+                               record_video_trigger=lambda x: x % 3000 == 0,
                                video_length=300)
 
     return env
@@ -149,7 +155,7 @@ def upload_file_to_artifacts(pth, artifact_name, artifact_type):
 
 
 def load_sim_params(env, param_pth):
-    config = configparser.ConfigParser()
+    config = configparser.ConfigParser(param_pth)
     config = config["DEFAULT"]
 
     # convert from str to float
@@ -228,8 +234,6 @@ def parse_args():
     # env params
     parser.add_argument('--fs', type=int, default=100,
                         help='Sampling frequency')
-    parser.add_argument('--fs_ctrl', type=int, default=100,
-                        help='control frequency')
     parser.add_argument('--episode_length', type=int, default=3000,
                         help='the maximum length of each episode. \
                         -1 = infinite')
@@ -240,8 +244,6 @@ def parse_args():
                         help='Restrict actions')
     parser.add_argument('--state_limits', type=str, default="low",
                         help='Wether to use high or low limits. See code.')
-    parser.add_argument('--reward', type=str, default="simple",
-                        help='Which reward to use? See env code.')
     parser.add_argument('--continuity_cost',
                         type=lambda x: bool(strtobool(x)), default=False,
                         help='If true use continuity cost from HistoryWrapper')
