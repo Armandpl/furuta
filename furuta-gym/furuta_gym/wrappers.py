@@ -78,6 +78,9 @@ class MCAPLogger(gym.Wrapper):
         self.output_file = open(self.log_dir / fname, "wb")
         self.mcap_writer = Writer(self.output_file)
 
+        # TODO add metadata
+        # date, control frequency, wandb run id, sim parameters, robot parameters, etc.
+
         self.episodes += 1
 
         # reset sim time
