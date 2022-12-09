@@ -125,10 +125,10 @@ void processPackets() {
     // Read the next byte from the serial port
     uint8_t b = Serial.read();
 
-    Serial.println("byte received");
-    Serial.println();
-    Serial.write(&b, 1);
-    Serial.println();
+    // Serial.println("byte received");
+    // Serial.println();
+    // Serial.write(&b, 1);
+    // Serial.println();
 
     // Check if the byte is the start byte
 
@@ -137,15 +137,9 @@ void processPackets() {
       while (Serial.available() < 1) {} // wait until we have the command type
       uint8_t command_type = Serial.read();
       
-      Serial.println("byte is start byte");
-
-      // send back command type over serial as hex
-      Serial.write(&command_type, 1);
-      Serial.println();
       // Check the command type
       if (command_type == MOTOR_COMMAND) {
 
-        Serial.println("command type is motor command");
         // Motor command packet received, read the rest of the packet
         motor_command_packet packet;
         packet.start_byte = b;
@@ -162,19 +156,16 @@ void processPackets() {
 
         // Check the packet integrity using the CRC value
         if (computeChecksum((uint8_t*)&packet, sizeof(packet) - sizeof(packet.checksum)) == packet.checksum) {
-          Serial.println("packet integrity is ok");
           // Packet integrity is OK, process the motor command
           processMotorCommand(packet.motor_command);
 
           // TODO send back ACK?
         }
         else {
-          Serial.println("packet integrity is not ok");
           // TODO send back NACK?
         }
       }
       else if (command_type == READ_COMMAND) {
-        Serial.println("read command received");
         // Read command packet received, read the rest of the packet
         read_command_packet packet;
         packet.start_byte = b;
@@ -191,7 +182,6 @@ void processPackets() {
 
         // Check the packet integrity using the CRC value
         if (computeChecksum((uint8_t*)&packet, sizeof(packet) - sizeof(packet.checksum)) == packet.checksum) {
-          Serial.println("checksum ok");
           // Packet integrity is OK, read and send system state
           float motor_angle = motorEncoder.read() / MOTOR_ENCODER_CPR;
           float pendulum_angle = pendulumEncoder.read() / PENDULUM_ENCODER_CPR;
@@ -200,7 +190,6 @@ void processPackets() {
         }
         else {
           // TODO send back NACK?
-          Serial.println("checksum not ok");
         }
       }
     }
@@ -216,7 +205,7 @@ void setup() {
   analogWrite(MD2, 0);
 
   // setup serial
-  Serial.begin(9600, SERIAL_8N1);
+  Serial.begin(115200, SERIAL_8N1);
 }
 
 void loop() {
