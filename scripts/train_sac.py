@@ -96,7 +96,7 @@ def setup_env(args):
     if args.log_mcap:
         env = MCAPLogger(
             env, 
-            f"./data/{wandb.run.id}",
+            f"../data/{wandb.run.id}",
             use_sim_time=(args.gym_id == "FurutaSim-v0")
         )
 
@@ -177,7 +177,8 @@ def parse_args():
     parser.add_argument('--capture_video',
                         type=lambda x: bool(strtobool(x)), default=False,
                         help='capture videos of the agent\
-                            (check out `videos` folder)')
+                            (check out `videos` folder)')  # TODO make that an an int n and if = 0 then no video
+                                                           # else it captures every n steps
     parser.add_argument('--log_mcap',
                         type=lambda x: bool(strtobool(x)), default=False,
                         help='log mcap data')
