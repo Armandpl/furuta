@@ -16,20 +16,20 @@ class Motor():
         self.pwm = GPIO.PWM(self.D2, freq)
         self.pwm.start(0)
 
-    def set_speed(self, speed):
-        if speed >= 0:
+    def set_speed(self, action):
+        if action >= 0:
             self.set_direction(1)
-        elif speed < 0:
+        elif action < 0:
             self.set_direction(-1)
 
         # make sure the motor gets the minimum voltage
         # TODO: should depend on motor specs
-        speed = abs(speed)
-        if speed > 0.0:
-            speed = 0.2 + 0.8 * speed
+        action = abs(action)
+        if action > 0.0:
+            action = 0.2 + 0.8 * action
 
-        speed = speed*100.0
-        self.pwm.ChangeDutyCycle(speed)
+        duty_cyle = action*100.0
+        self.pwm.ChangeDutyCycle(duty_cyle)
 
     def set_direction(self, direction):
         if direction == -1:

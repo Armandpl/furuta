@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+message PendulumState {
+  float motor_angle = 1;
+  float pendulum_angle = 2;
+  float motor_angle_velocity = 3;
+  float pendulum_angle_velocity = 4;
+  float reward = 5;
+  bool done = 6;
+  float action = 7;
+  float corrected_action = 8;
+}

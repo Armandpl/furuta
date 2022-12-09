@@ -1,10 +1,14 @@
 import logging
 import time
+from pathlib import Path
+from typing import Union
 
 import gym
 from gym.spaces import Box
 import numpy as np
 import wandb
+from mcap_protobuf.writer import Writer
+from furuta_gym.logging.protobuf.pendulum_state_pb2 import PendulumState
 
 
 class GentlyTerminating(gym.Wrapper):
@@ -22,6 +26,68 @@ class GentlyTerminating(gym.Wrapper):
         return self.env.reset()
 
 
+class MCAPLogger(gym.Wrapper):
+    def __init__(self, env: gym.Env, log_dir: Union[str, Path], use_sim_time: bool):
+        super().__init__(env)
+        if isinstance(log_dir, str):
+            log_dir = Path(log_dir)
+
+        self.log_dir = log_dir
+        self.use_sim_time = use_sim_time
+
+        self.episodes = 0
+        self.mcap_writer = None
+
+    def step(self, action):
+        observation, reward, done, info = self.env.step(action)
+        if self.use_sim_time:
+            self.sim_time += self.unwrapped.timing.dt
+
+        if self.use_sim_time:
+            time_to_log = self.sim_time
+        else:
+            time_to_log = time.time_ns()
+
+        # convert to milliseconds
+        time_to_log = round(time_to_log*1e9)
+
+        self.mcap_writer.write_message(
+            topic="/pendulum_state",
+            message=PendulumState(**info),
+
+            # TODO this should use the simulation time in the case of a simulation
+            log_time=time_to_log,  #  TODO check that's the right clock
+            publish_time=time_to_log,
+        )
+
+        return observation, reward, done, info
+
+    def reset(self):
+        # create log dir if doesn't exist
+        if not self.log_dir.exists():
+            self.log_dir.mkdir(parents=True)
+
+        # close previous log file
+        # TODO unsure how that'll pan out for the last episode
+        if self.mcap_writer is not None:
+            self.mcap_writer.finish()
+            self.output_file.close()
+
+        # instantiate a new MCAP writer
+        fname = f"ep{self.episodes}_{time.strftime('%Y%m%d-%H%M%S')}.mcap"
+        self.output_file = open(self.log_dir / fname, "wb")
+        self.mcap_writer = Writer(self.output_file)
+
+        # TODO add metadata
+        # date, control frequency, wandb run id, sim parameters, robot parameters, etc.
+
+        self.episodes += 1
+
+        # reset sim time
+        self.sim_time = 0
+        return self.env.reset()
+
+
 class ControlFrequency(gym.Wrapper):
     """
     Enforce a sleeping time (dt) between each step.
@@ -32,6 +98,7 @@ class ControlFrequency(gym.Wrapper):
 
     def step(self, action):
         current = time.time()
+        _, _, _, _ = self.env.step(action)
         loop_time = 0
         if self.last is not None:
             loop_time = current - self.last
@@ -42,8 +109,8 @@ class ControlFrequency(gym.Wrapper):
             else:
                 print("warning, loop time > dt")
 
+        obs, reward, done, info = self.env.step(np.array([0.0]))
         self.last = time.time()
-        obs, reward, done, info = self.env.step(action)
 
         if logging.root.level == logging.DEBUG:
             wandb.log({**info, **{"loop time": loop_time}})

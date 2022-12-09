@@ -56,35 +56,7 @@ class LabeledBox(spaces.Box):
 
 
 class Timing:
-    def __init__(self, fs, fs_ctrl):
-        fs_ctrl_min = 50.0  # minimal control rate
-        assert fs_ctrl >= fs_ctrl_min, \
-            "control frequency must be at least {}".format(fs_ctrl_min)
-        self.n_sim_per_ctrl = int(fs / fs_ctrl)
-        assert fs == fs_ctrl * self.n_sim_per_ctrl, \
-            "sampling frequency must be a multiple of the control frequency"
-        self.dt = 1.0 / fs
-        self.dt_ctrl = 1.0 / fs_ctrl
-        self.render_rate = int(fs_ctrl)
+    def __init__(self, f):
+        self.f = f
+        self.dt = 1.0 / f
 
-
-class PhysicSystem:
-
-    def __init__(self, dt, **kwargs):
-        self.dt = dt
-        for k in kwargs:
-            setattr(self, k, kwargs[k])
-            setattr(self, k + "_dot", 0.)
-
-    def add_acceleration(self, **kwargs):
-        for k in kwargs:
-            setattr(self, k + "_dot", getattr(self, k + "_dot") +
-                    self.dt * kwargs[k])
-            setattr(self, k, getattr(self, k) +
-                    self.dt * getattr(self, k + "_dot"))
-
-    def get_state(self, entities_list):
-        ret = []
-        for k in entities_list:
-            ret.append(getattr(self, k))
-        return np.array(ret)

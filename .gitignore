@@ -1,9 +1,15 @@
-videos/*
-wandb/*
-runs/*
-models/*
-artifacts/*
-replay_buffer/*
+**/videos/*
+**/wandb/*
+**/runs/*
+**/models/*
+**/artifacts/*
+**/replay_buffer/*
+
+data/*
+
+# ignore everything except notebooks in the notebook folder
+notebooks/*
+!notebooks/*.ipynb
 
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python

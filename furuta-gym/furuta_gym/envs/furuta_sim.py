@@ -6,32 +6,41 @@ from .furuta_base import FurutaBase
 
 class FurutaSim(FurutaBase):
 
-    def __init__(self, fs=200, fs_ctrl=100, action_limiter=True,
-                 safety_th_lim=1.5, reward="simple", state_limits='low'):
+    def __init__(self, fs=50, action_limiter=True,
+                 safety_th_lim=1.5, state_limits='low'):
 
-        super().__init__(fs, fs_ctrl, action_limiter, safety_th_lim,
-                         reward, state_limits)
+        super().__init__(fs, action_limiter, safety_th_lim,
+                         state_limits)
         self.dyn = QubeDynamics()
 
-    def _calibrate(self):
+    def _init_state(self):
+        # TODO could also sample from state space
+        # though we also use it as upper speed limit
+        # the two use case are kind of conflicting
+        # e.g we don't want to sample 400 rad/s for the init state
+        # but we do want the max speed to be 400 rad/s for any state
+        # and we dont want this:
+        # self._state = np.zeros(4)
+        # bc then gSDE doesn't work? if state = 0 no action is taken?
+        # or maybe it's too slow to move even the simulated pendulum?
+        # and maybe it should have a min voltage as well?
+        # self._state = np.random.rand(4)  # self.state_space.sample()
         self._state = \
-            0.01 * np.float32(self._np_random.randn(self.state_space.shape[0]))
-        self._state = self._update_state([0])
+            0.01 * np.float32(np.random.randn(self.state_space.shape[0]))
+        # print(self._state)
+        self._state = self._update_state(0)
+        # print(self._state)
 
     def _update_state(self, a):
-        # for sim a is motor input voltage ([-12, 12])
-        # but robot input and model output belong to [-1, 1]
-        a = a * 12
-
         thdd, aldd = self.dyn(self._state, a)
-        self._state[3] += self.timing.dt * aldd
+        self._state[3] += self.timing.dt * aldd  # TODO replace 3 ALPHA_DOT
         self._state[2] += self.timing.dt * thdd
         self._state[1] += self.timing.dt * self._state[3]
         self._state[0] += self.timing.dt * self._state[2]
         return np.copy(self._state)
 
     def reset(self):
-        self._calibrate()
+        self._init_state()
         return self.step(np.array([0.0]))[0]
 
 
@@ -41,9 +50,6 @@ class Parameterized(gym.Wrapper):
     """
     def params(self):
         return self.unwrapped.dyn.params
-
-    def step(self, action):
-        return self.env.step(action)
 
     def reset(self, params):
         self.unwrapped.dyn.params = params
@@ -59,6 +65,8 @@ class QubeDynamics:
 
         # Motor
         self.Rm = 8.4  # resistance (rated voltage/stall current)
+        self.V = 12.0  # nominal voltage
+        self.min_V = 0.2 * self.V  # minimum voltage to move the pendulum
 
         # back-emf constant (V-s/rad)
         self.km = 0.042  # (rated voltage / no load speed)
@@ -100,9 +108,9 @@ class QubeDynamics:
         self.__dict__.update(params)
         self._init_const()
 
-    def __call__(self, s, u):
+    def __call__(self, s, a):
         th, al, thd, ald = s
-        voltage = u[0]
+        voltage = a * self.V
 
         # Define mass matrix M = [[a, b], [b, c]]
         a = self._c[0] + self._c[1] * np.sin(al) ** 2
