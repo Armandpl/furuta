@@ -1,9 +1,9 @@
-videos/*
-wandb/*
-runs/*
-models/*
-artifacts/*
-replay_buffer/*
+**/videos/*
+**/wandb/*
+**/runs/*
+**/models/*
+**/artifacts/*
+**/replay_buffer/*
 
 data/*
 
