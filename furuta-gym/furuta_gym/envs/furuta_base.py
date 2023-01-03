@@ -23,6 +23,8 @@ class FurutaBase(gym.Env):
 
         act_max = np.array([1.0])
 
+        # TODO make that an arg in a yaml file
+        # having arbitrary high/low value is, well, arbitrary
         if state_limits == 'high':
             self.state_max = np.array([2.0, 4.0 * np.pi, 300.0, 400.0])
         elif state_limits == 'low':
@@ -32,6 +34,9 @@ class FurutaBase(gym.Env):
                             self.state_max[2], self.state_max[3]])
 
         # Spaces
+        # TODO is labeledbox really useful?
+        # i think it don't read the label anywhere
+        # could just add comments instead
         self.state_space = LabeledBox(
             labels=('theta', 'alpha', 'theta_dot', 'alpha_dot'),
             low=-self.state_max, high=self.state_max, dtype=np.float32)
@@ -74,11 +79,8 @@ class FurutaBase(gym.Env):
         assert a.ndim == 1, \
             "The action = {a} must be 1d but the input is {a.ndim}d"
 
-        self._state, act = self._ctrl_step(a)
-
+        # first read the robot/sim state
         rwd = self._reward(self._state)
-        done = not self.state_space.contains(self._state)
-
         obs = self.get_obs()
 
         info = {"motor_angle": float(self._state[THETA]),
@@ -89,6 +91,10 @@ class FurutaBase(gym.Env):
                 "done": bool(done),
                 "corrected_action": float(act),  # limited action
                 "action": float(a)}  # policy output
+
+        # then take action
+        self._state, act = self._ctrl_step(a)
+        done = not self.state_space.contains(self._state)
 
         return obs, rwd, done, info
 
