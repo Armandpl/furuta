@@ -3,21 +3,25 @@ import logging
 from time import sleep
 
 import numpy as np
+from furuta_gym.envs.furuta_base import FurutaBase
+from furuta_gym.utils import VelocityFilter
 
-from .common import VelocityFilter
-from .furuta_base import FurutaBase
-from .hardware.motor import Motor
-from .hardware.LS7366R import LS7366R
+# from .hardware.motor import Motor
+# from .hardware.LS7366R import LS7366R
 
 
 class FurutaReal(FurutaBase):
-
-    def __init__(self, fs=100, fs_ctrl=100,
-                 action_limiter=False, safety_th_lim=1.5,
-                 reward="simple", state_limits='low',
-                 config_file="robot.ini"):
-        super().__init__(fs, fs_ctrl, action_limiter, safety_th_lim,
-                         reward, state_limits)
+    def __init__(
+        self,
+        fs=100,
+        fs_ctrl=100,
+        action_limiter=False,
+        safety_th_lim=1.5,
+        reward="simple",
+        state_limits="low",
+        config_file="robot.ini",
+    ):
+        super().__init__(fs, fs_ctrl, action_limiter, safety_th_lim, reward, state_limits)
 
         self.vel_filt = VelocityFilter(2, dt=self.timing.dt)
 
@@ -52,14 +56,14 @@ class FurutaReal(FurutaBase):
         return state
 
     def _read_state(self):
-        pendulum_deg_per_count = 360/self.pendulum_CPR
+        pendulum_deg_per_count = 360 / self.pendulum_CPR
         p_count = self.pendulum_enc.readCounter()
         # p_count_modulo = p_count % self.pendulum_CPR
         pendulum_angle = pendulum_deg_per_count * p_count
         # pendulum_angle = (pendulum_angle + 180) % 360
         pendulum_angle = pendulum_angle * np.pi / 180
 
-        motor_deg_per_count = 360/self.motor_CPR
+        motor_deg_per_count = 360 / self.motor_CPR
         m_count = self.motor_enc.readCounter()
         m_count_modulo = m_count % self.motor_CPR
         motor_angle = m_count_modulo * motor_deg_per_count
@@ -77,8 +81,7 @@ class FurutaReal(FurutaBase):
         return self._state
 
     def _reset_pendulum(self, tolerance=10, still_time=1, clear=True):
-        """
-        This function resets the pendulum.
+        """This function resets the pendulum.
 
         :param tolerance: this is the degree windows
                           in which we want the pendulum to be
@@ -88,29 +91,31 @@ class FurutaReal(FurutaBase):
                       pendulum is reset
         """
         logging.debug("reset pendulum")
-        tolerance = tolerance/2
+        tolerance = tolerance / 2
         count = 0
         debug_count = 0
         while True:
-            pendulum_angle = self._read_state()[1]*180/np.pi
+            pendulum_angle = self._read_state()[1] * 180 / np.pi
             pendulum_angle = pendulum_angle % 360
 
-            if 360-tolerance < pendulum_angle or pendulum_angle < tolerance:
+            if 360 - tolerance < pendulum_angle or pendulum_angle < tolerance:
                 count += 1
                 debug_count = 0
             else:
                 count = 0
                 debug_count += 1
 
-            if count >= int(still_time/self.timing.dt_ctrl):
+            if count >= int(still_time / self.timing.dt_ctrl):
                 if clear:
                     self.pendulum_enc.clearCounter()
                 break
 
             if debug_count > 700:
                 enc_count = self.pendulum_enc.readCounter()
-                logging.debug(f"{pendulum_angle} pendulum angle, \
-                              {enc_count} enc count")
+                logging.debug(
+                    f"{pendulum_angle} pendulum angle, \
+                              {enc_count} enc count"
+                )
                 self.pendulum_enc.clearCounter()
 
             sleep(self.timing.dt_ctrl)
@@ -122,7 +127,7 @@ class FurutaReal(FurutaBase):
         # reset motor
         logging.debug("Reset motor")
         while True:
-            state = self._read_state()*180/np.pi
+            state = self._read_state() * 180 / np.pi
             motor_angle = state[0]
             motor_speed = state[2]
 
@@ -136,7 +141,7 @@ class FurutaReal(FurutaBase):
                     elif motor_angle > 0:
                         self.motor.set_speed(0.3)
 
-                    sleep(10/100)
+                    sleep(10 / 100)
 
                     self.motor.set_speed(0)
 
