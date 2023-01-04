@@ -1,15 +1,10 @@
 from collections import namedtuple
 from dataclasses import dataclass
 
-import numpy as np
 import gym
-
-from furuta_gym.common import LabeledBox, Timing
-
-THETA = 0
-ALPHA = 1
-THETA_DOT = 2
-ALPHA_DOT = 3
+import numpy as np
+from furuta_gym.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, Timing
+from gym.spaces import Box
 
 
 class FurutaBase(gym.Env):
@@ -21,37 +16,44 @@ class FurutaBase(gym.Env):
         self.timing = Timing(fs)
         self.viewer = None
 
-        act_max = np.array([1.0])
+        act_max = np.array([1.0], dtype=np.float32)
 
         # TODO make that an arg in a yaml file
         # having arbitrary high/low value is, well, arbitrary
-        if state_limits == 'high':
-            self.state_max = np.array([2.0, 4.0 * np.pi, 300.0, 400.0])
-        elif state_limits == 'low':
-            self.state_max = np.array([2.5, 4.0 * np.pi, 50.0, 400.0])
+        if state_limits == "high":
+            self.state_max = np.array([2.0, 4.0 * np.pi, 300.0, 400.0], dtype=np.float32)
+        elif state_limits == "low":
+            self.state_max = np.array([2.5, 4.0 * np.pi, 50.0, 400.0], dtype=np.float32)
 
-        obs_max = np.array([1.0, 1.0, 1.0, 1.0,
-                            self.state_max[2], self.state_max[3]])
+        obs_max = np.array(
+            [1.0, 1.0, 1.0, 1.0, self.state_max[2], self.state_max[3]], dtype=np.float32
+        )
 
         # Spaces
-        # TODO is labeledbox really useful?
-        # i think it don't read the label anywhere
-        # could just add comments instead
-        self.state_space = LabeledBox(
-            labels=('theta', 'alpha', 'theta_dot', 'alpha_dot'),
-            low=-self.state_max, high=self.state_max, dtype=np.float32)
-        self.observation_space = LabeledBox(
-            labels=('cos_th', 'sin_th', 'cos_al', 'sin_al', 'th_d', 'al_d'),
-            low=-obs_max, high=obs_max, dtype=np.float32)
-        self.action_space = LabeledBox(
-            labels=('action',),
-            low=-act_max, high=act_max, dtype=np.float32)
+        self.state_space = Box(
+            # labels=('theta', 'alpha', 'theta_dot', 'alpha_dot'),
+            low=-self.state_max,
+            high=self.state_max,
+            dtype=np.float32,
+        )
+
+        self.observation_space = Box(
+            # labels=('cos_th', 'sin_th', 'cos_al', 'sin_al', 'th_d', 'al_d'),
+            low=-obs_max,
+            high=obs_max,
+            dtype=np.float32,
+        )
+
+        self.action_space = Box(
+            # labels=('action',),
+            low=-act_max,
+            high=act_max,
+            dtype=np.float32,
+        )
 
         # Function to ensure that state and action constraints are satisfied
         if action_limiter:
-            self._lim_act = ActionLimiter(self.state_space,
-                                          self.action_space,
-                                          safety_th_lim)
+            self._lim_act = ActionLimiter(self.state_space, self.action_space, safety_th_lim)
         else:
             self._lim_act = None
 
@@ -76,32 +78,41 @@ class FurutaBase(gym.Env):
         assert a is not None, "Action should be not None"
         assert isinstance(a, np.ndarray), "The action should be a ndarray"
         assert np.all(not np.isnan(a)), "Action NaN is not a valid action"
-        assert a.ndim == 1, \
-            "The action = {a} must be 1d but the input is {a.ndim}d"
+        assert a.ndim == 1, "The action = {a} must be 1d but the input is {a.ndim}d"
 
         # first read the robot/sim state
         rwd = self._reward(self._state)
         obs = self.get_obs()
 
-        info = {"motor_angle": float(self._state[THETA]),
-                "pendulum_angle": float(self._state[ALPHA]),
-                "motor_angle_velocity": float(self._state[THETA_DOT]),
-                "pendulum_angle_velocity": float(self._state[ALPHA_DOT]),
-                "reward": float(rwd),
-                "done": bool(done),
-                "corrected_action": float(act),  # limited action
-                "action": float(a)}  # policy output
+        info = {
+            "motor_angle": float(self._state[THETA]),
+            "pendulum_angle": float(self._state[ALPHA]),
+            "motor_angle_velocity": float(self._state[THETA_DOT]),
+            "pendulum_angle_velocity": float(self._state[ALPHA_DOT]),
+            "reward": float(rwd),
+            "action": float(a),
+        }  # policy output
 
         # then take action
         self._state, act = self._ctrl_step(a)
         done = not self.state_space.contains(self._state)
 
+        info["corrected_action"] = float(act)  # limited action
+        info["done"] = bool(done)
+
         return obs, rwd, done, info
 
     def get_obs(self):
-        return np.float32([np.cos(self._state[THETA]), np.sin(self._state[THETA]),
-                           np.cos(self._state[ALPHA]), np.sin(self._state[ALPHA]),
-                           self._state[THETA_DOT], self._state[ALPHA_DOT]])
+        return np.float32(
+            [
+                np.cos(self._state[THETA]),
+                np.sin(self._state[THETA]),
+                np.cos(self._state[ALPHA]),
+                np.sin(self._state[ALPHA]),
+                self._state[THETA_DOT],
+                self._state[ALPHA_DOT],
+            ]
+        )
 
     def reset(self):
         raise NotImplementedError
@@ -124,17 +135,15 @@ class ActionLimiter:
     def __init__(self, state_space, action_space, th_lim_min):
         self._th_lim_min = th_lim_min
         self._th_lim_max = (state_space.high[0] + self._th_lim_min) / 2.0
-        self._th_lim_stiffness = \
-            action_space.high[0] / (self._th_lim_max - self._th_lim_min)
+        self._th_lim_stiffness = action_space.high[0] / (self._th_lim_max - self._th_lim_min)
         self._clip = lambda a: np.clip(a, action_space.low, action_space.high)
         self._relu = lambda x: x * (x > 0.0)
 
     def _joint_lim_violation_force(self, x):
         th, _, thd, _ = x
-        up = self._relu(th-self._th_lim_max) - self._relu(th-self._th_lim_min)
-        dn = -self._relu(-th-self._th_lim_max)+self._relu(-th-self._th_lim_min)
-        if (th > self._th_lim_min and thd > 0.0 or
-                th < -self._th_lim_min and thd < 0.0):
+        up = self._relu(th - self._th_lim_max) - self._relu(th - self._th_lim_min)
+        dn = -self._relu(-th - self._th_lim_max) + self._relu(-th - self._th_lim_min)
+        if th > self._th_lim_min and thd > 0.0 or th < -self._th_lim_min and thd < 0.0:
             force = self._th_lim_stiffness * (up + dn)
         else:
             force = 0.0
@@ -167,19 +176,21 @@ Screen = namedtuple("Screen", "width height")
 
 
 class CartPoleSwingUpViewer:
-    """Class that encapsulates all the variables and objectecs needed
-       to render a CartPoleSwingUpEnv. It handles all the initialization
-       and updating of each object on screen and handles calls to the
-       underlying gym.envs.classic_control.rendering.Viewer instance.
+    """Class that encapsulates all the variables and objectecs needed to render a
+    CartPoleSwingUpEnv.
+
+    It handles all the initialization and updating of each object on screen and handles calls to
+    the underlying gym.envs.classic_control.rendering.Viewer instance.
     """
 
     screen = Screen(width=600, height=400)
 
     def __init__(self, world_width):
         # TODO: make sure that's not redundant
-        from gym.envs.classic_control import rendering
         import pyglet
-        pyglet.options['headless'] = True  # noqa: F821
+        from gym.envs.classic_control import rendering
+
+        pyglet.options["headless"] = True  # noqa: F821
 
         cart = CartParams()
         pole = PoleParams()
@@ -197,12 +208,8 @@ class CartPoleSwingUpViewer:
             "cart": rendering.Transform(),
             "pole": rendering.Transform(translation=(0, 0)),
             "pole_bob": rendering.Transform(),
-            "wheel_l": rendering.Transform(
-                translation=(-cartwidth / 2, -cartheight / 2)
-            ),
-            "wheel_r": rendering.Transform(
-                translation=(cartwidth / 2, -cartheight / 2)
-            ),
+            "wheel_l": rendering.Transform(translation=(-cartwidth / 2, -cartheight / 2)),
+            "wheel_r": rendering.Transform(translation=(cartwidth / 2, -cartheight / 2)),
         }
 
         self._init_track(rendering, cartheight)
@@ -228,8 +235,7 @@ class CartPoleSwingUpViewer:
             cartheight / 2,
             -cartheight / 2,
         )
-        cart = rendering.FilledPolygon([(lef, bot), (lef, top),
-                                        (rig, top), (rig, bot)])
+        cart = rendering.FilledPolygon([(lef, bot), (lef, top), (rig, top), (rig, bot)])
         cart.add_attr(self.transforms["cart"])
         cart.set_color(1, 0, 0)
         self.viewer.add_geom(cart)
@@ -241,8 +247,7 @@ class CartPoleSwingUpViewer:
             polelength - polewidth / 2,
             -polewidth / 2,
         )
-        pole = rendering.FilledPolygon([(lef, bot), (lef, top),
-                                        (rig, top), (rig, bot)])
+        pole = rendering.FilledPolygon([(lef, bot), (lef, top), (rig, top), (rig, bot)])
         pole.set_color(0, 0, 1)
         pole.add_attr(self.transforms["pole"])
         pole.add_attr(self.transforms["cart"])
@@ -276,12 +281,12 @@ class CartPoleSwingUpViewer:
         self.viewer.add_geom(wheel_r)
 
     def update(self, state):
-        """Updates the positions of the objects on screen"""
+        """Updates the positions of the objects on screen."""
         screen = self.screen
         scale = screen.width / self.world_width
 
         th, al, _, _ = state
-        al = (al - np.pi) % (2*np.pi)  # change angle origin
+        al = (al - np.pi) % (2 * np.pi)  # change angle origin
 
         # use motor angle (theta) as cart x position
         cartx = th * scale + screen.width / 2.0  # MIDDLE OF CART
@@ -294,9 +299,9 @@ class CartPoleSwingUpViewer:
         )
 
     def render(self, *args, **kwargs):
-        """Forwards the call to the underlying Viewer instance"""
+        """Forwards the call to the underlying Viewer instance."""
         return self.viewer.render(*args, **kwargs)
 
     def close(self):
-        """Closes the underlying Viewer instance"""
+        """Closes the underlying Viewer instance."""
         self.viewer.close()
