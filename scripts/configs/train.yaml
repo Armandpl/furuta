@@ -1,0 +1,31 @@
+# specify here default configuration
+# order of defaults determines the order in which configs override each other
+defaults:
+  - _self_
+  - env: ???
+  - wrappers: ???
+  - algo: sac.yaml
+
+gym_id: ???
+total_timesteps: 1_000_000
+early_stopping_reward_threshold: 100 # use null for no early stopping
+
+# reproducibility
+seed: 1
+cudnn_deterministic: True
+
+# plumbing/misc
+debug: False
+capture_video: True
+wandb:
+  entity: null
+  project: furuta
+
+# resume training: load replay buffer and/or model
+replay_buffer_artifact: null
+model_artifact: null
+
+# logging
+save_model: False
+save_replay_buffer: False
+# add mcap
