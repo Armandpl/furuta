@@ -8,7 +8,13 @@ defaults:
 
 gym_id: ???
 total_timesteps: 1_000_000
-early_stopping_reward_threshold: 100 # use null for no early stopping
+
+# eval & early stopping
+evaluation:
+  early_stopping_reward_threshold: 800 # use null for no early stopping
+  deterministic: True
+  n_eval_episodes: 10
+  eval_freq: 500
 
 # reproducibility
 seed: 1
