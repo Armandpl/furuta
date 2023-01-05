@@ -105,18 +105,6 @@ def main(cfg: DictConfig):
             # print stack trace
             logging.warning(e, exc_info=True)
 
-    if cfg.capture_video:
-        # TODO add headleas arg, depends on the machine
-        # import pyvirtualdisplay
-        # pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
-        env = DummyVecEnv([lambda: env])
-        env = VecVideoRecorder(
-            env,
-            f"videos/{wandb.run.id}",
-            record_video_trigger=lambda x: x % 3000 == 0,
-            video_length=300,
-        )
-
     # setup algo/model
     verbose = 2 if cfg.debug else 0
     model = hydra.utils.instantiate(
@@ -135,18 +123,50 @@ def main(cfg: DictConfig):
 
     # Stop training when the model reaches the reward threshold
     eval_callback = None
-    if cfg.early_stopping_reward_threshold:
+    if cfg.evaluation.early_stopping_reward_threshold:
         callback_on_best = StopTrainingOnRewardThreshold(
-            reward_threshold=cfg.early_stopping_reward_threshold, verbose=1
+            reward_threshold=cfg.evaluation.early_stopping_reward_threshold, verbose=1
         )
         # use same env for eval
-        eval_callback = EvalCallback(env, callback_on_new_best=callback_on_best, verbose=1)
+        # TODO maybe do eval even when we don't want to early stop?
+        # would it be useful?
+        eval_callback = EvalCallback(
+            env,
+            deterministic=cfg.evaluation.deterministic,
+            n_eval_episodes=cfg.evaluation.n_eval_episodes,
+            eval_freq=cfg.evaluation.eval_freq,
+            callback_on_new_best=callback_on_best,
+            verbose=1,
+        )
 
     try:
         logging.info("Starting to train")
         model.learn(total_timesteps=cfg.total_timesteps, callback=eval_callback)
     except KeyboardInterrupt:
         logging.info("Interupting training")
+
+    # only save last video
+    if cfg.capture_video:
+        # TODO add headleas arg, depends on the machine
+        # import pyvirtualdisplay
+        # pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
+        video_length = 500
+        env = DummyVecEnv([lambda: env])
+        env = VecVideoRecorder(
+            env,
+            f"videos/{wandb.run.id}",
+            record_video_trigger=lambda x: x == 0,
+            video_length=video_length,
+        )
+
+        obs = env.reset()
+        for _ in range(video_length + 1):
+            action, _ = model.predict(obs, deterministic=False)
+            obs, _, done, _ = env.step(action)
+            if done:
+                break
+        # Save the video
+        env.close()
 
     if cfg.save_model:
         logging.info("Saving model to artifacts")
