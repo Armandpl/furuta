@@ -1,3 +1,4 @@
+import copy
 import importlib
 import logging
 import os
@@ -73,11 +74,9 @@ def main(cfg: DictConfig):
     logging_level = logging.DEBUG if cfg.debug else logging.INFO
     logging.basicConfig(format="%(levelname)s: %(message)s", level=logging_level)
 
-    # wandb expect a primitive dict
-    wandb.config = OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True)
-
     # setup wandb run
     run = wandb.init(
+        config=OmegaConf.to_container(cfg, resolve=True, throw_on_missing=True),
         project=cfg.wandb.project,
         entity=cfg.wandb.entity,
         sync_tensorboard=True,
@@ -124,6 +123,9 @@ def main(cfg: DictConfig):
     # Stop training when the model reaches the reward threshold
     eval_callback = None
     if cfg.evaluation.early_stopping_reward_threshold:
+        # TODO seems like weird things happen when we use the same env for training and eval
+        # e.g we get stuck in eval mode
+        eval_env = copy.deepcopy(env)
         callback_on_best = StopTrainingOnRewardThreshold(
             reward_threshold=cfg.evaluation.early_stopping_reward_threshold, verbose=1
         )
@@ -131,7 +133,7 @@ def main(cfg: DictConfig):
         # TODO maybe do eval even when we don't want to early stop?
         # would it be useful?
         eval_callback = EvalCallback(
-            env,
+            eval_env,
             deterministic=cfg.evaluation.deterministic,
             n_eval_episodes=cfg.evaluation.n_eval_episodes,
             eval_freq=cfg.evaluation.eval_freq,
