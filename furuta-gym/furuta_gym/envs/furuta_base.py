@@ -7,23 +7,44 @@ from furuta_gym.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, Timing
 from gym.spaces import Box
 
 
+def alpha_reward(state):
+    try:
+        rwd = (1 + -np.cos(state[ALPHA])) / 2
+    except Exception as e:
+        print(e)
+        print(state)
+
+    return rwd
+
+
+def alpha_theta_reward(state):
+    return alpha_reward(state) + (1 + np.cos(state[THETA])) / 2
+
+
+REWARDS = {
+    "alpha": alpha_reward,
+    "alpha_theta": alpha_theta_reward,
+}
+
+
 class FurutaBase(gym.Env):
     metadata = {"render.modes": ["rgb_array"]}  # TODO add headless mode
 
-    def __init__(self, fs, action_limiter, safety_th_lim, state_limits):
+    def __init__(self, fs, reward, state_limits=None):
 
-        self._state = None
         self.timing = Timing(fs)
         self.viewer = None
+        self._state = None
+        self.reward = reward
+
+        self._reward_func = REWARDS[self.reward.name]
 
         act_max = np.array([1.0], dtype=np.float32)
 
-        # TODO make that an arg in a yaml file
-        # having arbitrary high/low value is, well, arbitrary
-        if state_limits == "high":
-            self.state_max = np.array([2.0, 4.0 * np.pi, 300.0, 400.0], dtype=np.float32)
-        elif state_limits == "low":
-            self.state_max = np.array([2.5, 4.0 * np.pi, 50.0, 400.0], dtype=np.float32)
+        if state_limits:
+            self.state_max = np.array(state_limits, dtype=np.float32)
+        else:
+            self.state_max = np.array([np.inf, np.inf, np.inf, np.inf], dtype=np.float32)
 
         obs_max = np.array(
             [1.0, 1.0, 1.0, 1.0, self.state_max[2], self.state_max[3]], dtype=np.float32
@@ -51,37 +72,18 @@ class FurutaBase(gym.Env):
             dtype=np.float32,
         )
 
-        # Function to ensure that state and action constraints are satisfied
-        if action_limiter:
-            self._lim_act = ActionLimiter(self.state_space, self.action_space, safety_th_lim)
-        else:
-            self._lim_act = None
+    def step(self, action):
+        # assert a is not None, "Action should be not None"
+        # assert isinstance(a, np.ndarray), "The action should be a ndarray"
+        # assert np.all(not np.isnan(a)), "Action NaN is not a valid action"
+        # assert a.ndim == 1, "The action = {a} must be 1d but the input is {a.ndim}d"
 
-    def _ctrl_step(self, a):
-        x = self._state
-        a_cmd = None
-
-        if self._lim_act is not None:
-            a_cmd = self._lim_act(x, a)
-        else:
-            a_cmd = a
-        x = self._update_state(a_cmd[0])
-
-        return x, a_cmd  # return the last applied (clipped) command
-
-    def _reward(self, state):
-        _, al, _, _ = state
-
-        return (1 + -np.cos(al, dtype=np.float32)) / 2
-
-    def step(self, a):
-        assert a is not None, "Action should be not None"
-        assert isinstance(a, np.ndarray), "The action should be a ndarray"
-        assert np.all(not np.isnan(a)), "Action NaN is not a valid action"
-        assert a.ndim == 1, "The action = {a} must be 1d but the input is {a.ndim}d"
+        err_msg = f"{action!r} ({type(action)}) invalid"
+        assert self.action_space.contains(action), err_msg
+        assert self._state is not None, "Call reset before using step method."
 
         # first read the robot/sim state
-        rwd = self._reward(self._state)
+        rwd = self._reward_func(self._state)
         obs = self.get_obs()
 
         info = {
@@ -90,14 +92,15 @@ class FurutaBase(gym.Env):
             "motor_angle_velocity": float(self._state[THETA_DOT]),
             "pendulum_angle_velocity": float(self._state[ALPHA_DOT]),
             "reward": float(rwd),
-            "action": float(a),
-        }  # policy output
+            "action": float(action),
+        }
 
         # then take action
-        self._state, act = self._ctrl_step(a)
-        done = not self.state_space.contains(self._state)
+        self._update_state(action[0])
 
-        info["corrected_action"] = float(act)  # limited action
+        done = not self.state_space.contains(self._state)
+        rwd -= self.reward.oob_penalty * done
+
         info["done"] = bool(done)
 
         return obs, rwd, done, info
@@ -105,6 +108,7 @@ class FurutaBase(gym.Env):
     def get_obs(self):
         return np.float32(
             [
+                # TODO maybe call cos, sin at once? save a bit of time
                 np.cos(self._state[THETA]),
                 np.sin(self._state[THETA]),
                 np.cos(self._state[ALPHA]),
@@ -122,7 +126,7 @@ class FurutaBase(gym.Env):
 
     def render(self, mode="rgb_array"):
         if self.viewer is None:
-            self.viewer = CartPoleSwingUpViewer(world_width=5)
+            self.viewer = CartPoleSwingUpViewer(world_width=(2 * np.pi))
 
         if self._state is None:
             return None
@@ -287,6 +291,9 @@ class CartPoleSwingUpViewer:
 
         th, al, _, _ = state
         al = (al - np.pi) % (2 * np.pi)  # change angle origin
+
+        # keep th between -pi and pi
+        th = (th + np.pi) % (2 * np.pi) - np.pi
 
         # use motor angle (theta) as cart x position
         cartx = th * scale + screen.width / 2.0  # MIDDLE OF CART
