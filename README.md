@@ -1,6 +1,6 @@
 # Furuta Pendulum [![flake8 Lint](https://github.com/Armandpl/furuta/actions/workflows/lint.yml/badge.svg)](https://github.com/Armandpl/furuta/actions/workflows/lint.yml)
 
-In this repository you will find everything you need to [build and train a rotary inverted pendulum](https://www.youtube.com/watch?v=Y6FVBbqjR40) (also known as a furuta pendulum).
+In this repository you will find everything you need to build and train a rotary inverted pendulum (also known as a furuta pendulum). Watch the build video [here](https://www.youtube.com/watch?v=Y6FVBbqjR40).
 
 ![](./assets/pendulum.jpg)
 ## Table of Content
