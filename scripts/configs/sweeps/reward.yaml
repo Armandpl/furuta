@@ -1,0 +1,14 @@
+program: train.py
+method: grid
+parameters:
+  env.reward:
+    values: ["alpha", "alpha_theta"]
+  seed:
+    values: [1, 2, 3]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}
+  - +experiment=sim

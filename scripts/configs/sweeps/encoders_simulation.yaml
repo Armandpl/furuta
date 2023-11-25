@@ -1,10 +1,10 @@
 program: train.py
 method: grid
 parameters:
-  wrappers.HistoryWrapper.steps:
-    values: [1, 2, 3, 4, 15]
-  total_timesteps:
-    value: 100_000
+  env:
+    values: ["sim", "sim_encoders", "sim_precise_encoders"]
+  env.velocity_filter:
+    values: [null, 2, 3, 4, 10]
   seed:
     values: [1, 2, 3, 4]
 
@@ -13,4 +13,4 @@ command:
   - python
   - ${program}
   - ${args_no_hyphens}
-  - +experiment=train_sim
+  - +experiment=sim

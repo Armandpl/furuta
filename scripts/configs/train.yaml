@@ -21,7 +21,7 @@ seed: 1
 cudnn_deterministic: True
 
 # plumbing/misc
-debug: False
+debug: True
 capture_video: True
 wandb:
   entity: null
