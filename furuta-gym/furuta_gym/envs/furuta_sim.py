@@ -1,19 +1,35 @@
+from math import cos, sin
+
 import gym
 import numpy as np
-from furuta_gym.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT
+from furuta_gym.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, VelocityFilter
+from numpy.linalg import inv
 
 from .furuta_base import FurutaBase
 
 
 class FurutaSim(FurutaBase):
     def __init__(
-        self, fs=50, action_limiter=True, safety_th_lim=1.5, state_limits="low", sim_params=None
+        self,
+        fs=50,
+        reward="alpha",
+        state_limits=None,
+        sim_params=None,
+        encoders_CPRs=None,
+        velocity_filter: int = None,
     ):
 
-        super().__init__(fs, action_limiter, safety_th_lim, state_limits)
+        super().__init__(fs, reward, state_limits)
         self.dyn = QubeDynamics()
         if sim_params:
             self.dyn.params = sim_params
+
+        self.encoders_CPRs = encoders_CPRs
+
+        if velocity_filter:
+            self.vel_filt = VelocityFilter(velocity_filter, dt=self.timing.dt)
+        else:
+            self.vel_filt = None
 
     def _init_state(self):
         # TODO could also sample from state space
@@ -27,22 +43,54 @@ class FurutaSim(FurutaBase):
         # or maybe it's too slow to move even the simulated pendulum?
         # and maybe it should have a min voltage as well?
         # self._state = np.random.rand(4)  # self.state_space.sample()
-        self._state = 0.01 * np.float32(np.random.randn(self.state_space.shape[0]))
-        # print(self._state)
-        self._state = self._update_state(0)
-        # print(self._state)
+        self._simulation_state = 0.01 * np.float32(np.random.randn(self.state_space.shape[0]))
+        self._state = np.zeros(self.state_space.shape[0])
 
+        self._update_state(0)
+
+    @profile
     def _update_state(self, a):
-        thdd, aldd = self.dyn(self._state, a)
-        self._state[ALPHA_DOT] += self.timing.dt * aldd
-        self._state[THETA_DOT] += self.timing.dt * thdd
-        self._state[ALPHA] += self.timing.dt * self._state[ALPHA_DOT]
-        self._state[THETA] += self.timing.dt * self._state[THETA_DOT]
-        return np.copy(self._state)
+        # ok so we simulate two things: the systems's state
+        # and the way we would measure it
+
+        # update the simulation state
+        thdd, aldd = self.dyn(self._simulation_state, a)
+
+        # integrate
+        self._simulation_state[ALPHA_DOT] += self.timing.dt * aldd
+        self._simulation_state[THETA_DOT] += self.timing.dt * thdd
+        self._simulation_state[ALPHA] += self.timing.dt * self._simulation_state[ALPHA_DOT]
+        self._simulation_state[THETA] += self.timing.dt * self._simulation_state[THETA_DOT]
+
+        # simulate measurements
+        # 1. Reduce the resolution of THETA and ALPHA based on encoders's CPRS
+        # do this by rounding _simulation_state[THETA/ALPHA] to the nearest multiple of 2pi/CPRs
+        if self.encoders_CPRs:
+            # TODO dedupe code here
+            theta_increment = 2 * np.pi / self.encoders_CPRs["motor_encoder_CPRs"]
+            self._state[THETA] = (
+                np.round(self._simulation_state[THETA] / theta_increment) * theta_increment
+            )
+
+            alpha_increment = 2 * np.pi / self.encoders_CPRs["pendulum_encoder_CPRs"]
+            self._state[ALPHA] = (
+                np.round(self._simulation_state[ALPHA] / alpha_increment) * alpha_increment
+            )
+        else:
+            self._state[THETA] = self._simulation_state[THETA]
+            self._state[ALPHA] = self._simulation_state[ALPHA]
+
+        # 2. Compute the velocities using the velocity filter
+        if self.vel_filt:
+            self._state[2:4] = self.vel_filt(self._state[0:2])
+        else:
+            self._state[THETA_DOT] = self._simulation_state[THETA_DOT]
+            self._state[ALPHA_DOT] = self._simulation_state[ALPHA_DOT]
 
     def reset(self):
         self._init_state()
-        return self.step(np.array([0.0]))[0]
+        obs, _, _, _ = self.step(np.array([0.0]))
+        return obs
 
 
 class Parameterized(gym.Wrapper):
@@ -66,7 +114,6 @@ class QubeDynamics:
         # Motor
         self.Rm = 8.4  # resistance (rated voltage/stall current)
         self.V = 12.0  # nominal voltage
-        self.min_V = 0.2 * self.V  # minimum voltage to move the pendulum
 
         # back-emf constant (V-s/rad)
         self.km = 0.042  # (rated voltage / no load speed)
@@ -108,25 +155,54 @@ class QubeDynamics:
         self.__dict__.update(params)
         self._init_const()
 
-    def __call__(self, s, a):
-        th, al, thd, ald = s
-        voltage = a * self.V
+    @profile
+    def __call__(self, state, action):
+        # """
+        # action between 0 and 1, maps to +V and -V
+        # """
+        th, al, thd, ald = state
+        voltage = action * self.V
+
+        # Precompute some values
+        sin_al = sin(al)
+        sin_2al = sin(2 * al)
+        cos_al = cos(al)
 
         # Define mass matrix M = [[a, b], [b, c]]
-        a = self._c[0] + self._c[1] * np.sin(al) ** 2
-        b = self._c[2] * np.cos(al)
+        a = self._c[0] + self._c[1] * sin_al**2
+        b = self._c[2] * cos_al
         c = self._c[3]
         d = a * c - b * b
 
         # Calculate vector [x, y] = tau - C(q, qd)
         trq = self.km * (voltage - self.km * thd) / self.Rm
-        c0 = self._c[1] * np.sin(2 * al) * thd * ald - self._c[2] * np.sin(al) * ald * ald
-        c1 = -0.5 * self._c[1] * np.sin(2 * al) * thd * thd + self._c[4] * np.sin(al)
+        c0 = self._c[1] * sin_2al * thd * ald - self._c[2] * sin_al * ald * ald
+        c1 = -0.5 * self._c[1] * sin_2al * thd * thd + self._c[4] * sin_al
         x = trq - self.Dr * thd - c0
         y = -self.Dp * ald - c1
 
         # Compute M^{-1} @ [x, y]
         thdd = (c * x - b * y) / d
         aldd = (a * y - b * x) / d
+
+        # chat gpt optimized code lol
+        # # Define mass matrix M = [[a, b], [b, c]]
+        # a = self._c[0] + self._c[1] * np.sin(al) ** 2
+        # b = self._c[2] * np.cos(al)
+        # c = self._c[3]
+        # M = np.array([[a, b], [b, c]])
+        # Minv = inv(M)
+
+        # # Calculate vector [x, y] = tau - C(q, qd)
+        # trq = self.km * (voltage - self.km * thd) / self.Rm
+        # c0 = self._c[1] * np.sin(2 * al) * thd * ald - self._c[2] * np.sin(al) * ald * ald
+        # c1 = -0.5 * self._c[1] * np.sin(2 * al) * thd * thd + self._c[4] * np.sin(al)
+        # x = trq - self.Dr * thd - c0
+        # y = -self.Dp * ald - c1
+        # v = np.array([x, y])
+
+        # # Compute M^{-1} @ v
+        # acc = np.dot(Minv, v)
+        # thdd, aldd = acc
 
         return thdd, aldd
