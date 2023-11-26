@@ -21,7 +21,7 @@ class FurutaReal(FurutaBase):
         state_limits="low",
         config_file="robot.ini",
     ):
-        super().__init__(fs, fs_ctrl, action_limiter, safety_th_lim, reward, state_limits)
+        super().__init__(fs, fs_ctrl, reward, state_limits)
 
         self.vel_filt = VelocityFilter(2, dt=self.timing.dt)
 
