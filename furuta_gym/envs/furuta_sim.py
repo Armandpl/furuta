@@ -2,8 +2,9 @@ from math import cos, sin
 
 import gym
 import numpy as np
-from furuta_gym.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, VelocityFilter
 from numpy.linalg import inv
+
+from furuta_gym.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, VelocityFilter
 
 from .furuta_base import FurutaBase
 

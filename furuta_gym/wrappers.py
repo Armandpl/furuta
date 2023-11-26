@@ -5,11 +5,11 @@ from typing import Union
 
 import gym
 import numpy as np
-from furuta_gym.logging.protobuf.pendulum_state_pb2 import PendulumState
 from gym.spaces import Box
 from mcap_protobuf.writer import Writer
 
 import wandb
+from furuta_gym.logging.protobuf.pendulum_state_pb2 import PendulumState
 
 
 class GentlyTerminating(gym.Wrapper):
