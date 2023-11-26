@@ -1,5 +1,6 @@
 from collections import namedtuple
 from dataclasses import dataclass
+from math import cos, sin
 
 import gym
 import numpy as np
@@ -9,7 +10,7 @@ from gym.spaces import Box
 
 def alpha_reward(state):
     try:
-        rwd = (1 + -np.cos(state[ALPHA])) / 2
+        rwd = (1 + -cos(state[ALPHA])) / 2
     except Exception as e:
         print(e)
         print(state)
@@ -18,7 +19,7 @@ def alpha_reward(state):
 
 
 def alpha_theta_reward(state):
-    return alpha_reward(state) + (1 + np.cos(state[THETA])) / 2
+    return alpha_reward(state) + (1 + cos(state[THETA])) / 2
 
 
 REWARDS = {
@@ -72,15 +73,19 @@ class FurutaBase(gym.Env):
             dtype=np.float32,
         )
 
+    @profile
     def step(self, action):
+        # TODO this is slow, do we even need it?
+        # sb3 knows the env action space, probably it won't pass invalid actions
+
         # assert a is not None, "Action should be not None"
         # assert isinstance(a, np.ndarray), "The action should be a ndarray"
         # assert np.all(not np.isnan(a)), "Action NaN is not a valid action"
         # assert a.ndim == 1, "The action = {a} must be 1d but the input is {a.ndim}d"
+        # err_msg = f"{action!r} ({type(action)}) invalid"
 
-        err_msg = f"{action!r} ({type(action)}) invalid"
-        assert self.action_space.contains(action), err_msg
-        assert self._state is not None, "Call reset before using step method."
+        # assert self.action_space.contains(action), "Action is not in action space"
+        # assert self._state is not None, "Call reset before using step method."
 
         # first read the robot/sim state
         rwd = self._reward_func(self._state)
@@ -99,7 +104,8 @@ class FurutaBase(gym.Env):
         self._update_state(action[0])
 
         done = not self.state_space.contains(self._state)
-        rwd -= self.reward.oob_penalty * done
+        if done:
+            rwd -= self.reward.oob_penalty
 
         info["done"] = bool(done)
 
@@ -133,29 +139,6 @@ class FurutaBase(gym.Env):
 
         self.viewer.update(self._state)
         return self.viewer.render(return_rgb_array=mode == "rgb_array")
-
-
-class ActionLimiter:
-    def __init__(self, state_space, action_space, th_lim_min):
-        self._th_lim_min = th_lim_min
-        self._th_lim_max = (state_space.high[0] + self._th_lim_min) / 2.0
-        self._th_lim_stiffness = action_space.high[0] / (self._th_lim_max - self._th_lim_min)
-        self._clip = lambda a: np.clip(a, action_space.low, action_space.high)
-        self._relu = lambda x: x * (x > 0.0)
-
-    def _joint_lim_violation_force(self, x):
-        th, _, thd, _ = x
-        up = self._relu(th - self._th_lim_max) - self._relu(th - self._th_lim_min)
-        dn = -self._relu(-th - self._th_lim_max) + self._relu(-th - self._th_lim_min)
-        if th > self._th_lim_min and thd > 0.0 or th < -self._th_lim_min and thd < 0.0:
-            force = self._th_lim_stiffness * (up + dn)
-        else:
-            force = 0.0
-        return force
-
-    def __call__(self, x, a):
-        force = self._joint_lim_violation_force(x)
-        return self._clip(force if force else a)
 
 
 @dataclass(frozen=True)
