@@ -1,7 +1,7 @@
 # Hardware
 
 ## Bill of Materials
-We tried selecting components available worldwide. Feel to open an issue if you have trouble sourcing one or if you know of a better alternative. 
+We tried selecting components available worldwide. Feel to open an issue if you have trouble sourcing one or if you know of a better alternative.
 
 | Item Name (+datasheet link)                                                                                                                                                                            | Supplier                                                                                                                                                              | Price (EUR) |
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
@@ -39,7 +39,7 @@ These instructions are quite brief, if you're missing anything DM me [@armand_dp
 - Print all of the STLs under `/CAD/stl`
   - Print `motor_mount.stl` at 100% infill
   - Print the rest at 35% infill with 2 walls.
-  - Print `shaft_collar.stl` twice 
+  - Print `shaft_collar.stl` twice
   - Pause the `weights.stl` print at `z=10mm`, insert the M10 nut and resume the print. The procedure will depend on your printer and slicer software.
 - Insert the threaded inserts in the weight, arm and shaft collars prints.
 
@@ -59,3 +59,5 @@ These instructions are quite brief, if you're missing anything DM me [@armand_dp
 - _WIP: add motor driver instructions + double check everything, burned one rpi by inverting vcc and vin which are literally next to each other_
 - write the config file _WIP explain how to write config file + check everything in the gym is derived from the config_
 
+# WIP Notes
+- if issues uploading to the xiao samd/opening the serial port it might be a right issue `sudo chmod a+rw /dev/ttyACM0`

@@ -1,0 +1,16 @@
+program: train.py
+method: grid
+parameters:
+  wrappers.HistoryWrapper.steps:
+    values: [1, 2, 3, 4, 15]
+  total_timesteps:
+    value: 100_000
+  seed:
+    values: [1, 2, 3, 4]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}
+  - +experiment=train_sim

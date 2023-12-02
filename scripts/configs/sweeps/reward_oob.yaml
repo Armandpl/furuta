@@ -1,0 +1,16 @@
+program: train.py
+method: grid
+parameters:
+  env.reward.name:
+    values: ["alpha", "alpha_theta"]
+  env.reward.oob_penalty:
+    values: [0, 200]
+  seed:
+    values: [1, 2, 3]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}
+  - +experiment=sim

@@ -1,0 +1,15 @@
+# refer to https://stable-baselines3.readthedocs.io/en/master/modules/sac.html
+_target_: furuta_gym.algos.SAC
+policy: "MlpPolicy"
+learning_rate: 0.0003
+buffer_size: 1_000_000
+tau: 0.005
+gamma: 0.99
+batch_size: 256
+target_update_interval: 1
+learning_starts: 500
+use_sde: True
+use_sde_at_warmup: True
+sde_sample_freq: 64
+train_freq: [1, "episode"]
+gradient_steps: -1
