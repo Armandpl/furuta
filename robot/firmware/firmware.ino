@@ -1,6 +1,11 @@
 #include <stdint.h>
 #include <Encoder.h>
 
+// protocol def
+const uint8_t PACKET_SIZE = 6;
+const uint8_t RESET = 0;
+const uint8_t STEP = 1;
+
 // Pin definitions
 const uint8_t MOTOR_DRIVER = 0; // 0 = MC33926
 const uint8_t MOTOR_IN1 = 1; // which way to go
@@ -23,10 +28,13 @@ const float PENDULUM_ENCODER_CPR = 8192;
 Encoder motorEncoder(MOTOR_ENC_A, MOTOR_ENC_B);
 Encoder pendulumEncoder(PENDULUM_ENC_A, PENDULUM_ENC_B);
 
+volatile unsigned long lastCommandReceived = 0;
+const unsigned long COMMAND_TIMEOUT = 500; // ms
 
-void processMotorCommand(uint16_t motor_command, bool ccw) {
+
+void processMotorCommand(uint16_t motor_command, bool direction) {
   if (MOTOR_DRIVER == 0) { // MC33926
-    if (ccw) {
+    if (direction) {
       digitalWrite(MOTOR_IN1, LOW);
       digitalWrite(MOTOR_IN2, HIGH);
     }
@@ -37,7 +45,7 @@ void processMotorCommand(uint16_t motor_command, bool ccw) {
     analogWrite(MOTOR_D2, motor_command);
   }
   else if (MOTOR_DRIVER == 1) { // TB9051-FTG
-    if (ccw) {
+    if (direction) {
       analogWrite(PWM1, motor_command);
       analogWrite(PWM2, 0);
     }
@@ -63,39 +71,62 @@ void setup() {
   analogWriteResolution(16);
 
   // setup serial
-  Serial.begin(57600);
+  Serial.begin(921600);
 }
 
 
 void loop() {
-  // if at least two bytes (== one motor command)
-  // in the serial buffer
-  if (Serial.available() >= 2){
-    // read the two bytes
-    bool direction = Serial.read();
-    uint8_t low_byte = Serial.read();
-    uint8_t high_byte = Serial.read();
-    // combine the two bytes to one int16_t
-    uint16_t motor_command = (high_byte << 8) | low_byte;
-
-    // process the motor command
-    processMotorCommand(motor_command, direction);
-
-    // read the motor and pendulum encoder values
-    // convert to angles in radians
-    // and send them back as two floats
-
-    // read the motor and pendulum encoder values
-    long motorEncoderValue = motorEncoder.read();
-    long pendulumEncoderValue = pendulumEncoder.read();
-
-    // convert to angles in radians
-    float motorAngle = (2 * PI * motorEncoderValue) / MOTOR_ENCODER_CPR;
-    float pendulumAngle = (2 * PI * pendulumEncoderValue) / PENDULUM_ENCODER_CPR;
-
-    // send them back as two floats
-    Serial.write((uint8_t*)&motorAngle, sizeof(motorAngle));
-    Serial.write((uint8_t*)&pendulumAngle, sizeof(pendulumAngle));
+  if (millis() - lastCommandReceived > COMMAND_TIMEOUT) {
+    processMotorCommand(0, true); // kill motor
   }
 
+  if (Serial.available() >= PACKET_SIZE) {
+    // check for start sequence
+    if(Serial.read() != 0x10){
+      return;
+    }
+    if(Serial.read() != 0x02){
+      return;
+    }
+
+    lastCommandReceived = millis();
+
+    // valid packet, read the command type
+    uint8_t command = Serial.read();
+    if (command == RESET) {
+      // reset encoders
+      motorEncoder.write(0);
+      pendulumEncoder.write(0);
+      processMotorCommand(0, true); // kill motor
+      // Discard unnecessary bytes from the serial buffer
+      for (int i = 0; i < (PACKET_SIZE - 3); i++) {
+        Serial.read();
+      }
+    }
+    else if (command == STEP) {
+      // read the two bytes
+      bool direction = Serial.read();
+      uint16_t motor_command;
+      Serial.readBytes((char*)&motor_command, sizeof(motor_command));
+
+      // process the motor command
+      processMotorCommand(motor_command, direction);
+
+      // read the motor and pendulum encoder values
+      // convert to angles in radians
+      // and send them back as two floats
+
+      // read the motor and pendulum encoder values
+      long motorEncoderValue = motorEncoder.read();
+      long pendulumEncoderValue = pendulumEncoder.read();
+
+      // convert to angles in radians
+      float motorAngle = (2 * PI * motorEncoderValue) / MOTOR_ENCODER_CPR;
+      float pendulumAngle = (2 * PI * pendulumEncoderValue) / PENDULUM_ENCODER_CPR;
+
+      // send them back as two floats
+      Serial.write((uint8_t*)&motorAngle, sizeof(motorAngle));
+      Serial.write((uint8_t*)&pendulumAngle, sizeof(pendulumAngle));
+    }
+  }
 }
