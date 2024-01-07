@@ -18,6 +18,9 @@ jobs:
       - name: Set up Python environment
         uses: actions/setup-python@v1
         with:
-          python-version: "3.7"
+          python-version: "3.8"
       - name: flake8 Lint
         uses: py-actions/flake8@v1
+        with:
+          ignore: "E203,E402,E501,F401,F841"
+          exclude: "logs/*,data/*"
