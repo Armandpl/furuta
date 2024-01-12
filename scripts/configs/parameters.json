@@ -1,0 +1,19 @@
+{
+    "device": "/dev/ttyACM0",
+    "pendulum_controller":{
+        "controller_type": "PIDController",
+        "control_frequency": 2500,
+        "Kp": 1.0,
+        "Ki": 20.0,
+        "Kd": 0.01,
+        "setpoint": 180.0
+    },
+    "motor_controller":{
+        "controller_type": "PIDController",
+        "Kp": 1.0,
+        "Ki": 0.0,
+        "Kd": 0.0,
+        "setpoint": 0.0
+    },
+    "angle_threshold": 30.0
+}
