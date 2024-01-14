@@ -7,15 +7,13 @@ from furuta.controls.controllers import Controller
 from furuta.robot import Robot
 
 
-def read_parameters_file():
-    with open("scripts/configs/parameters.json") as f:
+def read_parameters_file(path: str):
+    with open(path) as f:
         parameters = json.load(f)
     return parameters
 
 
-def has_pendulum_fallen(pendulum_angle: float, parameters: dict):
-    setpoint = parameters["pendulum_controller"]["setpoint"]
-    angle_threshold = parameters["angle_threshold"]
+def has_pendulum_fallen(pendulum_angle: float, setpoint: float, angle_threshold: float):
     return np.abs(pendulum_angle - setpoint) > angle_threshold
 
 
@@ -49,13 +47,11 @@ def plot_data(actions, motor_angles, pendulum_angles):
 
 if __name__ == "__main__":
     # Read parameters from the .json file, angles are in degrees
-    parameters = read_parameters_file()
+    parameters = read_parameters_file("scripts/configs/parameters.json")
 
     # Convert the setpoint and the angle threshold to radians
-    parameters["pendulum_controller"]["setpoint"] = np.deg2rad(
-        parameters["pendulum_controller"]["setpoint"]
-    )
-    parameters["angle_threshold"] = np.deg2rad(parameters["angle_threshold"])
+    SETPOINT = np.deg2rad(parameters["pendulum_controller"]["setpoint"])
+    ANGLE_THRESHOLD = np.deg2rad(parameters["angle_threshold"])
 
     robot = Robot(parameters["device"])
 
@@ -105,7 +101,7 @@ if __name__ == "__main__":
         pendulum_angles.append(pendulum_angle)
 
         # Check if pendulum fell
-        if has_pendulum_fallen(pendulum_angle, parameters):
+        if has_pendulum_fallen(pendulum_angle, setpoint=SETPOINT, angle_threshold=ANGLE_THRESHOLD):
             print("Pendulum fell!")
             break
 
