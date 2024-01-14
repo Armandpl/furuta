@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+import numpy as np
 from simple_pid import PID
 
 
@@ -30,7 +31,7 @@ class PIDController(Controller):
                 Kp=parameters["Kp"],
                 Ki=parameters["Ki"],
                 Kd=parameters["Kd"],
-                setpoint=parameters["setpoint"],
+                setpoint=np.deg2rad(parameters["setpoint"]),
                 sample_time=sample_time,
             )
         except KeyError:
