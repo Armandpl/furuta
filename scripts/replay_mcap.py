@@ -1,7 +1,9 @@
-from mcap_protobuf.reader import read_protobuf_messages
-from furuta_gym.envs.furuta_base import CartPoleSwingUpViewer
-import numpy as np
 import time
+
+import numpy as np
+from mcap_protobuf.reader import read_protobuf_messages
+
+from furuta.envs.furuta_base import CartPoleSwingUpViewer
 
 if __name__ == "__main__":
     # TODO use smth like argparse to choose the file
@@ -13,7 +15,9 @@ if __name__ == "__main__":
 
     for msg in read_protobuf_messages(mcap_path, log_time_order=True):
         p = msg.proto_msg
-        state = np.array([p.motor_angle, p.pendulum_angle, p.motor_angle_velocity, p.pendulum_angle_velocity])
+        state = np.array(
+            [p.motor_angle, p.pendulum_angle, p.motor_angle_velocity, p.pendulum_angle_velocity]
+        )
         viewer.update(state)
         viewer.render(return_rgb_array=False)
         time.sleep(dt)

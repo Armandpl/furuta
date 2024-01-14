@@ -1,16 +1,10 @@
 import json
 
-import matplotlib
-
-# Tkinter needs to be installed for matplotlib to work
-# sudo apt-get install python3-tk
-matplotlib.use("TkAgg")
-
 import matplotlib.pyplot as plt
 import numpy as np
 
-from furuta_gym.robot import Robot
-from robot.software.controllers import Controller
+from furuta.controls.controllers import Controller
+from furuta.robot import Robot
 
 
 def read_parameters_file():
@@ -20,7 +14,6 @@ def read_parameters_file():
 
 
 def has_pendulum_fallen(pendulum_angle: float, parameters: dict):
-    # TODO: Implement in firware.ino for better safety?
     setpoint = parameters["pendulum_controller"]["setpoint"]
     angle_threshold = parameters["angle_threshold"]
     return np.abs(pendulum_angle - setpoint) > angle_threshold
@@ -79,21 +72,23 @@ if __name__ == "__main__":
 
     # Reset encoders
     robot.reset_encoders()
-    print("GO")
 
     # Wait for user input to start the control loop
-    input()
+    input("Encoders reset, lift the pendulum and press enter to start the control loop.")
 
     # Get the initial motor and pendulum angles
     motor_angle, pendulum_angle = robot.step(0)
 
     # Control loop
     while True:
-        # Compute the motor command from pendulum controller
-        action = pendulum_controller.compute_command(pendulum_angle)
+        # Init action
+        action = 0
+
+        # Add the motor command from pendulum controller
+        action -= pendulum_controller.compute_command(pendulum_angle)
 
         # Add the motor command from motor controller
-        action += motor_controller.compute_command(motor_angle)
+        action -= motor_controller.compute_command(motor_angle)
 
         # Clip the command between -1 and 1
         action = np.clip(action, -1, 1)

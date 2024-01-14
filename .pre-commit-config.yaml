@@ -55,7 +55,7 @@ repos:
             "--extend-ignore",
             "E203,E402,E501,F401,F841",
             "--exclude",
-            "logs/*,data/*,furuta_gym/logging/protobuf/*",
+            "logs/*,data/*,furuta/logging/protobuf/*",
           ]
 
   # yaml formatting

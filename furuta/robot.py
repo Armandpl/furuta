@@ -1,9 +1,7 @@
 import struct
 
-import matplotlib.pyplot as plt
 import numpy as np
 import serial
-import simple_pid
 
 
 class Robot:
@@ -11,7 +9,7 @@ class Robot:
         self.ser = serial.Serial(device, baudrate)
 
     def step(self, motor_command: float):
-        """motor command is a float between -1 and 1."""
+        """Motor command is a float between -1 and 1."""
         direction = motor_command < 0
         # convert motor command to 16 bit unsigned int
         int_motor_command = int(np.abs(motor_command) * (2**16 - 1))

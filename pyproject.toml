@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "furuta-gym"
+name = "furuta"
 version = "0.1.0"
 description = ""
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
-packages = [{include = "furuta_gym"}]
+packages = [{include = "furuta"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
