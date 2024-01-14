@@ -1,12 +1,12 @@
 import logging
 import time
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
-import gym
+import gymnasium as gym
 import numpy as np
 import wandb
-from gym.spaces import Box
+from gymnasium.spaces import Box
 from mcap_protobuf.writer import Writer
 
 from furuta.logging.protobuf.pendulum_state_pb2 import PendulumState
@@ -16,13 +16,17 @@ class GentlyTerminating(gym.Wrapper):
     """This env wrapper sends zero command to the robot when an episode is done."""
 
     def step(self, action):
-        observation, reward, done, info = self.env.step(action)
-        if done:
+        observation, reward, terminated, truncated, info = self.env.step(action)
+        if terminated or truncated:
             logging.debug("episode done, killing motor.")
-            self.env.motor.set_speed(0)
-        return observation, reward, done, info
+            self.unwrapped.robot.step(0.0)
+        return observation, reward, terminated, truncated, info
 
-    def reset(self):
+    def reset(
+        self,
+        seed: Optional[int] = None,
+        options: Optional[dict] = None,
+    ):
         return self.env.reset()
 
 
@@ -60,7 +64,11 @@ class MCAPLogger(gym.Wrapper):
 
         return observation, reward, done, info
 
-    def reset(self):
+    def reset(
+        self,
+        seed: Optional[int] = None,
+        options: Optional[dict] = None,
+    ):
         # create log dir if doesn't exist
         if not self.log_dir.exists():
             self.log_dir.mkdir(parents=True)
@@ -110,17 +118,21 @@ class ControlFrequency(gym.Wrapper):
             if sleeping_time > 0:
                 time.sleep(sleeping_time)
             else:
-                print("warning, loop time > dt")
+                logging.info("warning, loop time > dt")
 
-        obs, reward, done, info = self.env.step(np.array([0.0]))
+        obs, reward, terminated, truncated, info = self.env.step(np.array([0.0]))
         self.last = time.time()
 
         if logging.root.level == logging.DEBUG:
             wandb.log({**info, **{"loop time": loop_time}})
 
-        return obs, reward, done, info
+        return obs, reward, terminated, truncated, info
 
-    def reset(self):
+    def reset(
+        self,
+        seed: Optional[int] = None,
+        options: Optional[dict] = None,
+    ):
         self.last = None
         return self.env.reset()
 
@@ -159,7 +171,7 @@ class HistoryWrapper(gym.Wrapper):
         return continuity_cost
 
     def step(self, action):
-        obs, reward, done, info = self.env.step(action)
+        obs, reward, terminated, truncated, info = self.env.step(action)
         self.history.pop(0)
 
         obs = np.concatenate([obs, action])
@@ -171,11 +183,15 @@ class HistoryWrapper(gym.Wrapper):
             reward -= continuity_cost
             info["continuity_cost"] = continuity_cost
 
-        return obs, reward, done, info
+        return obs, reward, terminated, truncated, info
 
-    def reset(self):
+    def reset(
+        self,
+        seed: Optional[int] = None,
+        options: Optional[dict] = None,
+    ):
         self.history = self._make_history()
         self.history.pop(0)
-        obs = np.concatenate([self.env.reset(), np.zeros_like(self.env.action_space.low)])
+        obs = np.concatenate([self.env.reset()[0], np.zeros_like(self.env.action_space.low)])
         self.history.append(obs)
-        return np.array(self.history)
+        return np.array(self.history), {}

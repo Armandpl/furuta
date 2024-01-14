@@ -1,6 +1,6 @@
 # https://git.ias.informatik.tu-darmstadt.de/quanser/clients/-/blob/v0.1.1/quanser_robots/common.py
 import numpy as np
-from gym import spaces
+from gymnasium import spaces
 from scipy import signal
 
 THETA = 0
