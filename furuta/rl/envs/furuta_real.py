@@ -4,21 +4,25 @@ from time import sleep
 
 import numpy as np
 
-from furuta_gym.common import VelocityFilter
-from furuta_gym.envs.furuta_base import FurutaBase
-from furuta_gym.envs.hardware.robot import FurutaRobot
+from furuta.common import VelocityFilter
+from furuta.envs.furuta_base import FurutaBase
+from furuta.envs.hardware.robot import FurutaRobot
 
 
 class FurutaReal(FurutaBase):
+    def __init__(
+        self,
+        fs=100,
+        fs_ctrl=100,
+        action_limiter=False,
+        safety_th_lim=1.5,
+        reward="simple",
+        state_limits="low",
+        config_file="robot.ini",
+    ):
+        super().__init__(fs, fs_ctrl, action_limiter, safety_th_lim, reward, state_limits)
 
-    def __init__(self, fs=100, fs_ctrl=100,
-                 action_limiter=False, safety_th_lim=1.5,
-                 reward="simple", state_limits='low',
-                 config_file="robot.ini"):
-        super().__init__(fs, fs_ctrl, action_limiter, safety_th_lim,
-                         reward, state_limits)
-
-        self.robot = FurutaRobot() 
+        self.robot = FurutaRobot()
 
         self.vel_filt = VelocityFilter(2, dt=self.timing.dt)
 
@@ -61,7 +65,6 @@ class FurutaReal(FurutaBase):
     def _reset_pendulum(self, tolerance=10, still_time=1, clear=True):
         pass
 
-
     def reset(self):
         logging.info("Reset env...")
         # reset pendulum
@@ -69,7 +72,7 @@ class FurutaReal(FurutaBase):
         # reset motor
         logging.debug("Reset motor")
         while True:
-            state = self._read_state()*180/np.pi
+            state = self._read_state() * 180 / np.pi
             motor_angle = state[0]
             motor_speed = state[2]
 
@@ -83,7 +86,7 @@ class FurutaReal(FurutaBase):
                     elif motor_angle > 0:
                         self.motor.set_speed(0.3)
 
-                    sleep(10/100)
+                    sleep(10 / 100)
 
                     self.motor.set_speed(0)
 

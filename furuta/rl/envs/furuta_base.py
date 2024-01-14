@@ -6,7 +6,7 @@ import gym
 import numpy as np
 from gym.spaces import Box
 
-from furuta_gym.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, Timing
+from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, Timing
 
 
 def alpha_reward(state):

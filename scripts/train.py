@@ -5,12 +5,12 @@ import os
 import random
 from pathlib import Path
 
-import furuta_gym  # noqa F420
 import gym
 import hydra
 import numpy as np
 import stable_baselines3
 import torch
+import wandb
 from omegaconf import DictConfig, OmegaConf, open_dict
 from stable_baselines3.common.callbacks import (
     EvalCallback,
@@ -18,7 +18,7 @@ from stable_baselines3.common.callbacks import (
 )
 from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
 
-import wandb
+import furuta  # noqa F420
 
 # TODO
 # - save model/replay buffer X
