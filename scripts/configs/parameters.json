@@ -1,5 +1,4 @@
 {
-    "device": "/dev/ttyACM0",
     "pendulum_controller":{
         "controller_type": "PIDController",
         "control_frequency": 2500,
@@ -14,6 +13,5 @@
         "Ki": 0.001,
         "Kd": 0.0,
         "setpoint": 0.0
-    },
-    "angle_threshold": 60.0
+    }
 }

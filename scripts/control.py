@@ -1,64 +1,90 @@
-import json
-
 import matplotlib.pyplot as plt
 import numpy as np
 
 from furuta.controls.controllers import Controller
+from furuta.controls.utils import read_parameters_file
 from furuta.robot import Robot
 
+PARAMETERS_PATH = "scripts/configs/parameters.json"
 
-def read_parameters_file(path: str):
-    with open(path) as f:
-        parameters = json.load(f)
-    return parameters
+DEVICE = "/dev/ttyACM0"
 
 
-def has_pendulum_fallen(pendulum_angle: float, setpoint: float, angle_threshold: float):
-    return np.abs(pendulum_angle - setpoint) > angle_threshold
+class Data:
+    def __init__(self):
+        self.actions = []
+        self.motor_angles = []
+        self.pendulum_angles = []
+
+    def log_action(self, action):
+        self.actions.append(action)
+
+    def log_motor_angle(self, angle):
+        self.motor_angles.append(angle)
+
+    def log_pendulum_angle(self, angle):
+        self.pendulum_angles.append(angle)
+
+    def plot(self):
+        # plot actions
+        plt.figure(1)
+        plt.plot(self.actions)
+        plt.title("Actions Over Time")
+        plt.xlabel("Time")
+        plt.ylabel("Action Value")
+        plt.grid(True)
+
+        # plot motor angles
+        plt.figure(2)
+        plt.plot(np.rad2deg(self.motor_angles))
+        plt.title("Motor Angles Over Time")
+        plt.xlabel("Time")
+        plt.ylabel("Motor Angle (in deg)")
+        plt.grid(True)
+
+        # plot pendulum angles
+        plt.figure(3)
+        plt.plot(np.rad2deg(self.pendulum_angles))
+        plt.title("Pendulum Angles Over Time")
+        plt.xlabel("Time")
+        plt.ylabel("Pendulum Angle (in deg)")
+        plt.grid(True)
+
+        plt.show()
 
 
-def plot_data(actions, motor_angles, pendulum_angles):
-    # plot actions
-    plt.figure(1)
-    plt.plot(actions)
-    plt.title("Actions Over Time")
-    plt.xlabel("Time")
-    plt.ylabel("Action Value")
-    plt.grid(True)
+class SafetyMonitor:
+    def __init__(self):
+        self.motor_max_number_rev = 0.5
+        self.pendulum_angle_threshold = np.deg2rad(60)
+        self.pendulum_setpoint = np.pi
 
-    # plot motor angles
-    plt.figure(2)
-    plt.plot(motor_angles)
-    plt.title("Motor Angles Over Time")
-    plt.xlabel("Time")
-    plt.ylabel("Motor Angle (in radians)")
-    plt.grid(True)
+    def run_checks(self, data: Data):
+        if self.is_motor_out_of_bounds(data.motor_angles[-1]):
+            raise ValueError("Motor is out of bounds")
 
-    # plot pendulum angles
-    plt.figure(3)
-    plt.plot(pendulum_angles)
-    plt.title("Pendulum Angles Over Time")
-    plt.xlabel("Time")
-    plt.ylabel("Pendulum Angle (in radians)")
-    plt.grid(True)
+        if self.has_pendulum_fallen(data.pendulum_angles[-1]):
+            raise ValueError("Pendulum has fallen")
 
-    plt.show()
+    def has_pendulum_fallen(self, pendulum_angle: float):
+        return np.abs(pendulum_angle - self.pendulum_setpoint) > self.pendulum_angle_threshold
+
+    def is_motor_out_of_bounds(self, motor_angle: float):
+        return np.abs(motor_angle) > self.motor_max_number_rev * 2 * np.pi
 
 
-if __name__ == "__main__":
+def main():
     # Read parameters from the .json file, angles are in degrees
-    parameters = read_parameters_file("scripts/configs/parameters.json")
+    parameters = read_parameters_file(PARAMETERS_PATH)
 
-    # Convert the setpoint and the angle threshold to radians
-    SETPOINT = np.deg2rad(parameters["pendulum_controller"]["setpoint"])
-    ANGLE_THRESHOLD = np.deg2rad(parameters["angle_threshold"])
+    # Init robot
+    robot = Robot(DEVICE)
 
-    robot = Robot(parameters["device"])
+    # Init safety monitor
+    safety_monitor = SafetyMonitor()
 
-    # Init data lists
-    actions = []
-    motor_angles = []
-    pendulum_angles = []
+    # Init data logger
+    data = Data()
 
     # Init pendulum controller
     pendulum_controller = Controller.build_controller(parameters["pendulum_controller"])
@@ -95,18 +121,24 @@ if __name__ == "__main__":
         # Take the modulus of the pendulum angle between 0 and 2pi
         pendulum_angle = np.mod(pendulum_angle, 2 * np.pi)
 
-        # Append the data to the lists
-        actions.append(action)
-        motor_angles.append(motor_angle)
-        pendulum_angles.append(pendulum_angle)
+        # Log data
+        data.log_action(action)
+        data.log_motor_angle(motor_angle)
+        data.log_pendulum_angle(pendulum_angle)
 
-        # Check if pendulum fell
-        if has_pendulum_fallen(pendulum_angle, setpoint=SETPOINT, angle_threshold=ANGLE_THRESHOLD):
-            print("Pendulum fell!")
+        # Safety checks
+        try:
+            safety_monitor.run_checks(data)
+        except ValueError as e:
+            print(e)
             break
 
     # Close the serial connection
     robot.close()
 
     # Plot data
-    plot_data(actions, motor_angles, pendulum_angles)
+    data.plot()
+
+
+if __name__ == "__main__":
+    main()
