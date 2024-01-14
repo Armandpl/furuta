@@ -1,9 +1,9 @@
-from math import cos, sin
+from typing import Optional
 
-import gym
+import gymnasium as gym
 import numpy as np
-from numpy.linalg import inv
 
+from furuta.robot import QubeDynamics
 from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, VelocityFilter
 
 from .furuta_base import FurutaBase
@@ -12,18 +12,17 @@ from .furuta_base import FurutaBase
 class FurutaSim(FurutaBase):
     def __init__(
         self,
-        fs=50,
+        dyn: QubeDynamics = QubeDynamics(),
+        control_freq=50,
         reward="alpha",
-        state_limits=None,
-        sim_params=None,
+        state_limits=[np.pi, 2 * np.pi, 20, 20],
         encoders_CPRs=None,
         velocity_filter: int = None,
+        render_mode="rgb_array",
     ):
 
-        super().__init__(fs, reward, state_limits)
-        self.dyn = QubeDynamics()
-        if sim_params:
-            self.dyn.params = sim_params
+        super().__init__(control_freq, reward, state_limits, render_mode)
+        self.dyn = dyn
 
         self.encoders_CPRs = encoders_CPRs
 
@@ -44,12 +43,16 @@ class FurutaSim(FurutaBase):
         # or maybe it's too slow to move even the simulated pendulum?
         # and maybe it should have a min voltage as well?
         # self._state = np.random.rand(4)  # self.state_space.sample()
-        self._simulation_state = 0.01 * np.float32(np.random.randn(self.state_space.shape[0]))
-        self._state = np.zeros(self.state_space.shape[0])
+
+        # TODO actually sample from system bounds?
+        # start at zero for now
+        self._simulation_state = np.zeros(
+            4, dtype=np.float32
+        )  # 0.01 * np.float32(np.random.randn(self.state_space.shape[0]))
+        self._state = np.zeros(self.state_space.shape[0], dtype=np.float32)
 
         self._update_state(0)
 
-    @profile
     def _update_state(self, a):
         # ok so we simulate two things: the systems's state
         # and the way we would measure it
@@ -57,7 +60,7 @@ class FurutaSim(FurutaBase):
         # update the simulation state
         thdd, aldd = self.dyn(self._simulation_state, a)
 
-        # integrate
+        # TODO integrate
         self._simulation_state[ALPHA_DOT] += self.timing.dt * aldd
         self._simulation_state[THETA_DOT] += self.timing.dt * thdd
         self._simulation_state[ALPHA] += self.timing.dt * self._simulation_state[ALPHA_DOT]
@@ -88,10 +91,14 @@ class FurutaSim(FurutaBase):
             self._state[THETA_DOT] = self._simulation_state[THETA_DOT]
             self._state[ALPHA_DOT] = self._simulation_state[ALPHA_DOT]
 
-    def reset(self):
+    def reset(
+        self,
+        seed: Optional[int] = None,
+        options: Optional[dict] = None,
+    ):
         self._init_state()
-        obs, _, _, _ = self.step(np.array([0.0]))
-        return obs
+        obs, _, _, _, _ = self.step(np.array([0.0]))
+        return obs, {}
 
 
 class Parameterized(gym.Wrapper):
@@ -103,107 +110,3 @@ class Parameterized(gym.Wrapper):
     def reset(self, params):
         self.unwrapped.dyn.params = params
         return self.env.reset()
-
-
-class QubeDynamics:
-    """Solve equation M qdd + C(q, qd) = tau for qdd."""
-
-    def __init__(self):
-        # Gravity
-        self.g = 9.81
-
-        # Motor
-        self.Rm = 8.4  # resistance (rated voltage/stall current)
-        self.V = 12.0  # nominal voltage
-
-        # back-emf constant (V-s/rad)
-        self.km = 0.042  # (rated voltage / no load speed)
-
-        # Rotary arm
-        self.Mr = 0.095  # mass (kg)
-        self.Lr = 0.085  # length (m)
-        self.Dr = 5e-6  # viscous damping (N-m-s/rad), original: 0.0015
-
-        # Pendulum link
-        self.Mp = 0.024  # mass (kg)
-        self.Lp = 0.129  # length (m)
-        self.Dp = 1e-6  # viscous damping (N-m-s/rad), original: 0.0005
-
-        # Init constants
-        self._init_const()
-
-    def _init_const(self):
-        # Moments of inertia
-        Jr = self.Mr * self.Lr**2 / 12  # inertia about COM (kg-m^2)
-        Jp = self.Mp * self.Lp**2 / 12  # inertia about COM (kg-m^2)
-
-        # Constants for equations of motion
-        self._c = np.zeros(5)
-        self._c[0] = Jr + self.Mp * self.Lr**2
-        self._c[1] = 0.25 * self.Mp * self.Lp**2
-        self._c[2] = 0.5 * self.Mp * self.Lp * self.Lr
-        self._c[3] = Jp + self._c[1]
-        self._c[4] = 0.5 * self.Mp * self.Lp * self.g
-
-    @property
-    def params(self):
-        params = self.__dict__.copy()
-        params.pop("_c")
-        return params
-
-    @params.setter
-    def params(self, params):
-        self.__dict__.update(params)
-        self._init_const()
-
-    @profile
-    def __call__(self, state, action):
-        # """
-        # action between 0 and 1, maps to +V and -V
-        # """
-        th, al, thd, ald = state
-        voltage = action * self.V
-
-        # Precompute some values
-        sin_al = sin(al)
-        sin_2al = sin(2 * al)
-        cos_al = cos(al)
-
-        # Define mass matrix M = [[a, b], [b, c]]
-        a = self._c[0] + self._c[1] * sin_al**2
-        b = self._c[2] * cos_al
-        c = self._c[3]
-        d = a * c - b * b
-
-        # Calculate vector [x, y] = tau - C(q, qd)
-        trq = self.km * (voltage - self.km * thd) / self.Rm
-        c0 = self._c[1] * sin_2al * thd * ald - self._c[2] * sin_al * ald * ald
-        c1 = -0.5 * self._c[1] * sin_2al * thd * thd + self._c[4] * sin_al
-        x = trq - self.Dr * thd - c0
-        y = -self.Dp * ald - c1
-
-        # Compute M^{-1} @ [x, y]
-        thdd = (c * x - b * y) / d
-        aldd = (a * y - b * x) / d
-
-        # chat gpt optimized code lol
-        # # Define mass matrix M = [[a, b], [b, c]]
-        # a = self._c[0] + self._c[1] * np.sin(al) ** 2
-        # b = self._c[2] * np.cos(al)
-        # c = self._c[3]
-        # M = np.array([[a, b], [b, c]])
-        # Minv = inv(M)
-
-        # # Calculate vector [x, y] = tau - C(q, qd)
-        # trq = self.km * (voltage - self.km * thd) / self.Rm
-        # c0 = self._c[1] * np.sin(2 * al) * thd * ald - self._c[2] * np.sin(al) * ald * ald
-        # c1 = -0.5 * self._c[1] * np.sin(2 * al) * thd * thd + self._c[4] * np.sin(al)
-        # x = trq - self.Dr * thd - c0
-        # y = -self.Dp * ald - c1
-        # v = np.array([x, y])
-
-        # # Compute M^{-1} @ v
-        # acc = np.dot(Minv, v)
-        # thdd, aldd = acc
-
-        return thdd, aldd
