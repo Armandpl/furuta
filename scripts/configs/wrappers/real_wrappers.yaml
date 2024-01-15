@@ -1,4 +1,5 @@
 # import common wrappers between sim/real
 defaults:
   - base_wrappers
-# add wrappers specific to the robot
+# add wrappers specific to the robot:
+# gently terminating and rate limiter

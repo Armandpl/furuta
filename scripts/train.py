@@ -5,7 +5,7 @@ import os
 import random
 from pathlib import Path
 
-import gym
+import gymnasium as gym
 import hydra
 import numpy as np
 import stable_baselines3
@@ -16,43 +16,21 @@ from stable_baselines3.common.callbacks import (
     EvalCallback,
     StopTrainingOnRewardThreshold,
 )
-from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
+from stable_baselines3.common.env_checker import check_env
+from stable_baselines3.common.vec_env import (
+    DummyVecEnv,
+    SubprocVecEnv,
+    VecVideoRecorder,
+)
 
-import furuta  # noqa F420
+from furuta.rl.envs.furuta_real import FurutaReal
+from furuta.rl.utils import (
+    download_artifact_file,
+    seed_everything,
+    upload_file_to_artifacts,
+)
 
-# TODO
-# - save model/replay buffer X
-# - finish setup wrappers: think about how to setup; maybe have some hardcoded wrappers?
-# - load custom sim parameters X
-
-
-def download_artifact_file(artifact_alias, filename):
-    """Download artifact and returns path to filename.
-
-    :param artifact_name: wandb artifact alias
-    :param filename: filename in the artifact
-    """
-    logging.info(f"loading {filename} from {artifact_alias}")
-
-    artifact = wandb.use_artifact(artifact_alias)
-    artifact_dir = Path(artifact.download())
-    filepath = artifact_dir / filename
-
-    assert filepath.is_file(), f"{artifact_alias} doesn't contain {filename}"
-
-    return filepath
-
-
-def upload_file_to_artifacts(pth, artifact_name, artifact_type):
-    logging.info(f"Saving {pth} to {artifact_name}")
-    if not isinstance(pth, Path):
-        pth = Path(pth)
-
-    assert os.path.isfile(pth), f"{pth} is not a file"
-
-    artifact = wandb.Artifact(artifact_name, type=artifact_type)
-    artifact.add_file(pth)
-    wandb.log_artifact(artifact)
+# import furuta  # noqa F420
 
 
 def instantiate_gym_wrapper(wrapper_name: str, wrapper_args: DictConfig, env: gym.Env) -> gym.Env:
@@ -69,7 +47,6 @@ def instantiate_gym_wrapper(wrapper_name: str, wrapper_args: DictConfig, env: gy
 
 @hydra.main(version_base="1.3", config_path="configs", config_name="train.yaml")
 def main(cfg: DictConfig):
-    print(cfg)
 
     logging_level = logging.DEBUG if cfg.debug else logging.INFO
     logging.basicConfig(format="%(levelname)s: %(message)s", level=logging_level)
@@ -85,16 +62,11 @@ def main(cfg: DictConfig):
     )
 
     # setup env
-    env = gym.make(cfg.gym_id, **cfg.env)
+    env = hydra.utils.instantiate(cfg.env, _recursive_=True)
+    check_env(env)
 
     # seed everything
-    env.seed(cfg.seed)
-    env.action_space.seed(cfg.seed)
-    env.observation_space.seed(cfg.seed)
-    random.seed(cfg.seed)
-    np.random.seed(cfg.seed)
-    torch.manual_seed(cfg.seed)
-    torch.backends.cudnn.deterministic = cfg.cudnn_deterministic
+    seed_everything(env, cfg.seed, cfg.cudnn_deterministic)
 
     # setup wrappers
     for wrapper_name, wrapper_args in cfg.wrappers.items():
@@ -104,10 +76,15 @@ def main(cfg: DictConfig):
             # print stack trace
             logging.warning(e, exc_info=True)
 
+    if isinstance(env.unwrapped, FurutaReal):
+        vec_env = DummyVecEnv([lambda: env])
+    else:
+        vec_env = SubprocVecEnv([lambda: copy.deepcopy(env) for _ in range(cfg.n_envs)])
+
     # setup algo/model
     verbose = 2 if cfg.debug else 0
     model = hydra.utils.instantiate(
-        cfg.algo, env=env, tensorboard_log=f"runs/{run.id}", verbose=verbose
+        cfg.algo, env=vec_env, tensorboard_log=f"runs/{run.id}", verbose=verbose, _convert_="all"
     )
 
     # load model/replay buffer
@@ -132,11 +109,14 @@ def main(cfg: DictConfig):
         # use same env for eval
         # TODO maybe do eval even when we don't want to early stop?
         # would it be useful?
+        # accounting for vec envs
+
+        eval_freq = max(cfg.evaluation.eval_env // cfg.n_envs, 1)
         eval_callback = EvalCallback(
             eval_env,
             deterministic=cfg.evaluation.deterministic,
             n_eval_episodes=cfg.evaluation.n_eval_episodes,
-            eval_freq=cfg.evaluation.eval_freq,
+            eval_freq=eval_freq,
             callback_on_new_best=callback_on_best,
             verbose=1,
         )
@@ -161,7 +141,7 @@ def main(cfg: DictConfig):
             video_length=video_length,
         )
 
-        obs = env.reset()
+        obs = env.reset(options={"random_init": False})
         for _ in range(video_length + 1):
             action, _ = model.predict(obs, deterministic=False)
             obs, _, done, _ = env.step(action)

@@ -4,4 +4,4 @@ defaults:
   - override /wrappers: base_wrappers
 
 gym_id: "FurutaSim-v0"
-total_timesteps: 50_000
+total_timesteps: 1_000_000

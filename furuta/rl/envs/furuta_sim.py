@@ -31,7 +31,7 @@ class FurutaSim(FurutaBase):
         else:
             self.vel_filt = None
 
-    def _init_state(self):
+    def _init_state(self, random_init: bool = True):
         # TODO could also sample from state space
         # though we also use it as upper speed limit
         # the two use case are kind of conflicting
@@ -43,15 +43,8 @@ class FurutaSim(FurutaBase):
         # or maybe it's too slow to move even the simulated pendulum?
         # and maybe it should have a min voltage as well?
         # self._state = np.random.rand(4)  # self.state_space.sample()
-
-        # TODO actually sample from system bounds?
-        # start at zero for now
-        self._simulation_state = np.zeros(
-            4, dtype=np.float32
-        )  # 0.01 * np.float32(np.random.randn(self.state_space.shape[0]))
-        self._state = np.zeros(self.state_space.shape[0], dtype=np.float32)
-
-        self._update_state(0)
+        self._simulation_state = 0.01 * np.float32(np.random.randn(self.state_space.shape[0]))
+        self._state = self._simulation_state.copy()
 
     def _update_state(self, a):
         # ok so we simulate two things: the systems's state
@@ -96,8 +89,10 @@ class FurutaSim(FurutaBase):
         seed: Optional[int] = None,
         options: Optional[dict] = None,
     ):
-        self._init_state()
-        obs, _, _, _, _ = self.step(np.array([0.0]))
+        if options is None:
+            options = {}
+        self._init_state(options.get("random_init", True))
+        obs = self.get_obs()
         return obs, {}
 
 
