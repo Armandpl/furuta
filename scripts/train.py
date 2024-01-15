@@ -111,7 +111,7 @@ def main(cfg: DictConfig):
         # would it be useful?
         # accounting for vec envs
 
-        eval_freq = max(cfg.evaluation.eval_env // cfg.n_envs, 1)
+        eval_freq = max(cfg.evaluation.eval_freq // cfg.n_envs, 1)
         eval_callback = EvalCallback(
             eval_env,
             deterministic=cfg.evaluation.deterministic,
@@ -141,7 +141,10 @@ def main(cfg: DictConfig):
             video_length=video_length,
         )
 
-        obs = env.reset(options={"random_init": False})
+        # vec so we can't pass reset options
+        # TODO random init should be an env param?
+        # obs = env.reset(options={"random_init": False})
+        obs = env.reset()
         for _ in range(video_length + 1):
             action, _ = model.predict(obs, deterministic=False)
             obs, _, done, _ = env.step(action)
