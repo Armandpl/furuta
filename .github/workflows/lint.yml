@@ -23,4 +23,4 @@ jobs:
         uses: py-actions/flake8@v1
         with:
           ignore: "E203,E402,E501,F401,F841"
-          exclude: "logs/*,data/*,furuta_gym/logging/protobuf/*"
+          exclude: "logs/*,data/*,furuta/logging/protobuf/*"
