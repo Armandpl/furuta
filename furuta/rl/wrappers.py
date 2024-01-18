@@ -43,7 +43,7 @@ class MCAPLogger(gym.Wrapper):
         self.mcap_writer = None
 
     def step(self, action):
-        observation, reward, done, info = self.env.step(action)
+        observation, reward, terminated, truncated, info = self.env.step(action)
         if self.use_sim_time:
             self.sim_time += self.unwrapped.timing.dt
 
@@ -62,7 +62,7 @@ class MCAPLogger(gym.Wrapper):
             publish_time=time_to_log,
         )
 
-        return observation, reward, done, info
+        return observation, reward, terminated, truncated, info
 
     def reset(
         self,
@@ -103,9 +103,9 @@ class MCAPLogger(gym.Wrapper):
 class ControlFrequency(gym.Wrapper):
     """Enforce a sleeping time (dt) between each step."""
 
-    def __init__(self, env, dt, log_freq=3000):
+    def __init__(self, env, log_freq=3000):
         super().__init__(env)
-        self.dt = dt
+        self.dt = env.unwrapped.timing.dt
         self.last = None
 
         # TODO make control freq reporting better
