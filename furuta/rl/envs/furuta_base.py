@@ -137,7 +137,7 @@ class FurutaBase(gym.Env):
         seed: Optional[int] = None,
         options: Optional[dict] = None,
     ):
-        super().reset(seed)
+        super().reset(seed=seed)
 
     def _update_state(self, a):
         raise NotImplementedError
