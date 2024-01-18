@@ -18,7 +18,7 @@ class GentlyTerminating(gym.Wrapper):
     def step(self, action):
         observation, reward, terminated, truncated, info = self.env.step(action)
         if terminated or truncated:
-            logging.debug("episode done, killing motor.")
+            logging.info("episode done, killing motor.")
             self.unwrapped.robot.step(0.0)
         return observation, reward, terminated, truncated, info
 
@@ -103,24 +103,33 @@ class MCAPLogger(gym.Wrapper):
 class ControlFrequency(gym.Wrapper):
     """Enforce a sleeping time (dt) between each step."""
 
-    def __init__(self, env, dt):
+    def __init__(self, env, dt, log_freq=3000):
         super().__init__(env)
         self.dt = dt
+        self.last = None
+
+        # TODO make control freq reporting better
+        # or maybe not, maybe we should bench speed in designated script see #55
+        # average control freq over many steps
+        self.log_freq = log_freq
+        self.nb_steps = 0
 
     def step(self, action):
+        self.nb_steps += 1
         current = time.time()
-        _, _, _, _ = self.env.step(action)
         loop_time = 0
         if self.last is not None:
             loop_time = current - self.last
             sleeping_time = self.dt - loop_time
+            if self.nb_steps % self.log_freq == 0:
+                logging.info(f"control freq: {1/loop_time}")
 
             if sleeping_time > 0:
                 time.sleep(sleeping_time)
             else:
                 logging.info("warning, loop time > dt")
 
-        obs, reward, terminated, truncated, info = self.env.step(np.array([0.0]))
+        obs, reward, terminated, truncated, info = self.env.step(action)
         self.last = time.time()
 
         if logging.root.level == logging.DEBUG:
