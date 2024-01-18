@@ -6,5 +6,5 @@ defaults:
 
 total_timesteps: 150_000
 n_envs: 1
-model_artifact: "v358"
+model_artifact: "model:v7"
 capture_video: False

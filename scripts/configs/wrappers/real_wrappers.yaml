@@ -1,9 +1,10 @@
-# import common wrappers between sim/real
-defaults:
-  - base_wrappers@_here_
-
-wrappers:
-  - _target_: furuta.rl.wrappers.GentlyTerminating
-  - _target_: furuta.rl.wrappers.ControlFrequency
+- _target_: gymnasium.wrappers.TimeLimit
+  max_episode_steps: 1000
+- _target_: furuta.rl.wrappers.HistoryWrapper
+  steps: 2
+  use_continuity_cost: True
+- _target_: stable_baselines3.common.monitor.Monitor
+- _target_: furuta.rl.wrappers.GentlyTerminating
+- _target_: furuta.rl.wrappers.ControlFrequency
 # - _target_: furuta.rl.wrappers.MCAPLogger
 #   use_sim_time: False
