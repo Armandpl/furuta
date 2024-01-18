@@ -37,8 +37,8 @@ class FurutaBase(gym.Env):
         self,
         control_freq,
         reward,
-        angle_limits=[np.pi, np.pi],  # used to help convergence
-        speed_limits=[60, 400],  # used to avoid damaging the robot
+        angle_limits=[np.pi, np.pi],  # used to help convergence?
+        speed_limits=[60, 400],  # used to avoid damaging the real robot or diverging sim
         render_mode="rgb_array",
     ):
         self.render_mode = render_mode
@@ -137,7 +137,7 @@ class FurutaBase(gym.Env):
         seed: Optional[int] = None,
         options: Optional[dict] = None,
     ):
-        raise NotImplementedError
+        super().reset(seed)
 
     def _update_state(self, a):
         raise NotImplementedError
@@ -182,7 +182,10 @@ class FurutaBase(gym.Env):
 
         l, r, t, b = -cartwidth / 2, cartwidth / 2, cartheight / 2, -cartheight / 2
         axleoffset = cartheight / 4.0
-        cartx = x[THETA] * scale + self.screen_width / 2.0  # MIDDLE OF CART
+
+        # make sure theta stays between -pi and pi
+        theta = (x[THETA] % (2 * np.pi)) - np.pi
+        cartx = theta * scale + self.screen_width / 2.0  # MIDDLE OF CART
         carty = 100  # TOP OF CART
         cart_coords = [(l, b), (l, t), (r, t), (r, b)]
         cart_coords = [(c[0] + cartx, c[1] + carty) for c in cart_coords]
