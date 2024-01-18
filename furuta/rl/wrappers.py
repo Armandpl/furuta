@@ -4,12 +4,14 @@ from pathlib import Path
 from typing import Optional, Union
 
 import gymnasium as gym
+import hydra
 import numpy as np
 import wandb
 from gymnasium.spaces import Box
 from mcap_protobuf.writer import Writer
 
 from furuta.logging.protobuf.pendulum_state_pb2 import PendulumState
+from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT
 
 
 class GentlyTerminating(gym.Wrapper):
@@ -31,12 +33,15 @@ class GentlyTerminating(gym.Wrapper):
 
 
 class MCAPLogger(gym.Wrapper):
-    def __init__(self, env: gym.Env, log_dir: Union[str, Path], use_sim_time: bool):
+    def __init__(self, env: gym.Env, use_sim_time: bool, log_dir: Union[str, Path] = None):
         super().__init__(env)
-        if isinstance(log_dir, str):
-            log_dir = Path(log_dir)
 
-        self.log_dir = log_dir
+        if log_dir:
+            if isinstance(log_dir, str):
+                log_dir = Path(log_dir)
+            self.log_dir = log_dir
+        else:
+            self.log_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
         self.use_sim_time = use_sim_time
 
         self.episodes = 0
@@ -50,14 +55,18 @@ class MCAPLogger(gym.Wrapper):
         if self.use_sim_time:
             time_to_log = self.sim_time
         else:
-            time_to_log = time.time_ns()  # TODO check that's the right clock
-
-        # convert to milliseconds
-        time_to_log = round(time_to_log * 1e9)
+            time_to_log = time.time_ns()
 
         self.mcap_writer.write_message(
             topic="/pendulum_state",
-            message=PendulumState(**info),
+            message=PendulumState(
+                motor_angle=self.unwrapped._state[THETA],
+                pendulum_angle=self.unwrapped._state[ALPHA],
+                motor_angle_velocity=self.unwrapped._state[THETA_DOT],
+                pendulum_angle_velocity=self.unwrapped._state[ALPHA_DOT],
+                reward=reward,
+                action=float(action[0]),
+            ),
             log_time=time_to_log,
             publish_time=time_to_log,
         )
@@ -81,8 +90,9 @@ class MCAPLogger(gym.Wrapper):
         self.output_file = open(self.log_dir / fname, "wb")
         self.mcap_writer = Writer(self.output_file)
 
-        # TODO add metadata
+        # TODO add metadata?
         # date, control frequency, wandb run id, sim parameters, robot parameters, etc.
+        # or maybe we should log this to wandb? or maybe just use it for quick local debug?
 
         self.episodes += 1
 

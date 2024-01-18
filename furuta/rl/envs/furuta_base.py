@@ -99,16 +99,6 @@ class FurutaBase(gym.Env):
         rwd = self._reward_func(self._state)
         obs = self.get_obs()
 
-        # we use this info dict to log the state in mcap files
-        info = {
-            "motor_angle": float(self._state[THETA]),
-            "pendulum_angle": float(self._state[ALPHA]),
-            "motor_angle_velocity": float(self._state[THETA_DOT]),
-            "pendulum_angle_velocity": float(self._state[ALPHA_DOT]),
-            "reward": float(rwd),
-            "action": float(action[0]),
-        }
-
         # then take action/step the sim
         self._update_state(action[0])
 
@@ -117,10 +107,9 @@ class FurutaBase(gym.Env):
         # if terminated:
         #     rwd -= self.reward.oob_penalty
 
-        info["terminated"] = bool(terminated)
         truncated = False
 
-        return obs, rwd, terminated, truncated, info
+        return obs, rwd, terminated, truncated, {}
 
     def get_obs(self):
         return np.float32(
