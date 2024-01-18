@@ -1,15 +1,7 @@
 import copy
-import importlib
 import logging
-import os
-import random
-from pathlib import Path
 
-import gymnasium as gym
 import hydra
-import numpy as np
-import stable_baselines3
-import torch
 import wandb
 from omegaconf import DictConfig, OmegaConf, open_dict
 from stable_baselines3.common.callbacks import (
@@ -29,20 +21,6 @@ from furuta.rl.utils import (
     seed_everything,
     upload_file_to_artifacts,
 )
-
-# import furuta  # noqa F420
-
-
-def instantiate_gym_wrapper(wrapper_name: str, wrapper_args: DictConfig, env: gym.Env) -> gym.Env:
-    """Instantiate a gym wrapper from a config."""
-    module = importlib.import_module(wrapper_args.module)
-    wrapper_class = getattr(module, wrapper_name)
-
-    # pop module from DictConfig wrappers args
-    with open_dict(wrapper_args):
-        wrapper_args.pop("module")
-
-    return wrapper_class(env, **wrapper_args)
 
 
 @hydra.main(version_base="1.3", config_path="configs", config_name="train.yaml")
@@ -69,15 +47,14 @@ def main(cfg: DictConfig):
     seed_everything(env, cfg.seed, cfg.cudnn_deterministic)
 
     # setup wrappers
-    for wrapper_name, wrapper_args in cfg.wrappers.items():
-        try:
-            env = instantiate_gym_wrapper(wrapper_name, wrapper_args, env)
-        except Exception as e:
-            # print stack trace
-            logging.warning(e, exc_info=True)
+    for wrapper in cfg.wrappers:
+        env = hydra.utils.instantiate(wrapper, env=env)
 
+    # don't paralelize if it's the real robot
     if isinstance(env.unwrapped, FurutaReal):
         vec_env = DummyVecEnv([lambda: env])
+        if cfg.n_envs > 1:
+            logging.warning("n_envs > 1 but using real robot, ignoring n_envs")
     else:
         vec_env = SubprocVecEnv([lambda: copy.deepcopy(env) for _ in range(cfg.n_envs)])
 
@@ -89,12 +66,10 @@ def main(cfg: DictConfig):
 
     # load model/replay buffer
     if cfg.model_artifact:
-        model.load(download_artifact_file(f"model:{cfg.model_artifact}", "model.zip"))
+        model.load(download_artifact_file(cfg.model_artifact, "model.zip"))
 
     if cfg.replay_buffer_artifact:
-        rb_path = download_artifact_file(
-            f"replay_buffer:{cfg.replay_buffer_artifact}", "buffer.pkl"
-        )
+        rb_path = download_artifact_file(cfg.replay_buffer_artifact, "buffer.pkl")
         model.load_replay_buffer(rb_path)
 
     # Stop training when the model reaches the reward threshold
@@ -129,7 +104,7 @@ def main(cfg: DictConfig):
 
     # only save last video
     if cfg.capture_video:
-        # TODO add headleas arg, depends on the machine
+        # TODO add headless arg, depends on the machine
         # import pyvirtualdisplay
         # pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
         video_length = 500
@@ -141,9 +116,6 @@ def main(cfg: DictConfig):
             video_length=video_length,
         )
 
-        # vec so we can't pass reset options
-        # TODO random init should be an env param?
-        # obs = env.reset(options={"random_init": False})
         obs = env.reset()
         for _ in range(video_length + 1):
             action, _ = model.predict(obs, deterministic=False)
@@ -155,15 +127,15 @@ def main(cfg: DictConfig):
 
     if cfg.save_model:
         logging.info("Saving model to artifacts")
-        model_path = f"runs/{run.id}/models/sac.zip"
+        model_path = f"runs/{run.id}/models/model.zip"
         model.save(model_path)
-        upload_file_to_artifacts(model_path, "sac_model", "model")
+        upload_file_to_artifacts(model_path, "model", "model")
 
     if cfg.save_replay_buffer:
         logging.info("Saving replay_buffer to artifacts")
         buffer_path = f"runs/{run.id}/buffers/buffer.pkl"
         model.save_replay_buffer(buffer_path)
-        upload_file_to_artifacts(buffer_path, "sac_replay_buffer", "replay buffer")
+        upload_file_to_artifacts(buffer_path, "replay_buffer", "replay buffer")
 
     env.close()
     run.finish()
