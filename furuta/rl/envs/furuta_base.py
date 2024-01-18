@@ -1,5 +1,3 @@
-from collections import namedtuple
-from dataclasses import dataclass
 from typing import Optional
 
 import gymnasium as gym
@@ -32,10 +30,17 @@ REWARDS = {
 class FurutaBase(gym.Env):
     metadata = {
         "render_modes": ["rgb_array", "human"],
-        "render_fps": 50,  # TODO should this be the same as the control freq?
-    }  # TODO add headless mode?
+        "render_fps": 50,  # TODO should this be the same as the control freq/sim dt?
+    }
 
-    def __init__(self, control_freq, reward, state_limits=None, render_mode="rgb_array"):
+    def __init__(
+        self,
+        control_freq,
+        reward,
+        angle_limits=[np.pi, np.pi],  # used to help convergence
+        speed_limits=[60, 400],  # used to avoid damaging the robot
+        render_mode="rgb_array",
+    ):
         self.render_mode = render_mode
 
         self.timing = Timing(control_freq)
@@ -46,20 +51,24 @@ class FurutaBase(gym.Env):
         self.screen_height = 400
         self.screen = None
         self.clock = None
-        self.isopen = True
 
         self._reward_func = REWARDS[self.reward]
 
         act_max = np.array([1.0], dtype=np.float32)
 
-        if state_limits:
-            self.state_max = np.array(state_limits, dtype=np.float32)
-        else:
-            self.state_max = np.array([np.inf, np.inf, np.inf, np.inf], dtype=np.float32)
+        if angle_limits is None:
+            angle_limits = [np.inf, np.inf]
+        if speed_limits is None:
+            speed_limits = [np.inf, np.inf]
 
-        obs_max = np.array(
-            [1.0, 1.0, 1.0, 1.0, self.state_max[2], self.state_max[3]], dtype=np.float32
+        state_limits = np.array(
+            [angle_limits[0], angle_limits[1], speed_limits[0], speed_limits[1]]
         )
+        self.state_max = np.array(state_limits, dtype=np.float32)
+
+        # max obs based on max speeds measured on the robot
+        # TODO need to actually measure it
+        obs_max = np.array([1.0, 1.0, 1.0, 1.0, 50, 50], dtype=np.float32)
 
         # Spaces
         self.state_space = Box(
@@ -84,18 +93,6 @@ class FurutaBase(gym.Env):
         )
 
     def step(self, action):
-        # TODO this is slow, do we even need it?
-        # sb3 knows the env action space, probably it won't pass invalid actions
-
-        # assert a is not None, "Action should be not None"
-        # assert isinstance(a, np.ndarray), "The action should be a ndarray"
-        # assert np.all(not np.isnan(a)), "Action NaN is not a valid action"
-        # assert a.ndim == 1, "The action = {a} must be 1d but the input is {a.ndim}d"
-        # err_msg = f"{action!r} ({type(action)}) invalid"
-
-        # assert self.action_space.contains(action), "Action is not in action space"
-        # assert self._state is not None, "Call reset before using step method."
-
         # first read the robot/sim state
         rwd = self._reward_func(self._state)
         obs = self.get_obs()
@@ -107,7 +104,7 @@ class FurutaBase(gym.Env):
             "motor_angle_velocity": float(self._state[THETA_DOT]),
             "pendulum_angle_velocity": float(self._state[ALPHA_DOT]),
             "reward": float(rwd),
-            "action": float(action),
+            "action": float(action[0]),
         }
 
         # then take action/step the sim
@@ -126,7 +123,6 @@ class FurutaBase(gym.Env):
     def get_obs(self):
         return np.float32(
             [
-                # TODO maybe call cos, sin at once? save a bit of time
                 np.cos(self._state[THETA]),
                 np.sin(self._state[THETA]),
                 np.cos(self._state[ALPHA]),
@@ -241,4 +237,3 @@ class FurutaBase(gym.Env):
 
             pygame.display.quit()
             pygame.quit()
-            self.isopen = False
