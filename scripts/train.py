@@ -2,7 +2,6 @@ import copy
 import logging
 
 import hydra
-import wandb
 from omegaconf import DictConfig, OmegaConf, open_dict
 from stable_baselines3.common.callbacks import (
     EvalCallback,
@@ -15,6 +14,7 @@ from stable_baselines3.common.vec_env import (
     VecVideoRecorder,
 )
 
+import wandb
 from furuta.rl.envs.furuta_real import FurutaReal
 from furuta.rl.utils import (
     download_artifact_file,
@@ -47,7 +47,7 @@ def main(cfg: DictConfig):
     seed_everything(env, cfg.seed, cfg.cudnn_deterministic)
 
     # setup wrappers
-    for wrapper in cfg.wrappers.wrappers:
+    for wrapper in cfg.wrappers:
         env = hydra.utils.instantiate(wrapper, env=env)
 
     # don't paralelize if it's the real robot
