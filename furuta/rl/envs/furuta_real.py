@@ -8,7 +8,11 @@ from furuta.rl.envs.furuta_base import FurutaBase
 from furuta.robot import Robot
 from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, VelocityFilter
 
-MAX_RESET_TIME = 5  # seconds
+MAX_RESET_TIME = 7  # seconds
+RESET_TIME = 0.5
+ALPHA_THRESH = np.deg2rad(
+    2
+)  # alpha should stay between -2 and 2 deg for 0.5 sec for us to consider the env reset
 
 
 class FurutaReal(FurutaBase):
@@ -45,10 +49,16 @@ class FurutaReal(FurutaBase):
 
         # wait for pendulum to fall back to start position
         reset_time = 0
-        while np.abs(self._state[ALPHA_DOT]) > 0.1 and reset_time < MAX_RESET_TIME:
+        time_under_thresh = 0
+
+        while time_under_thresh < RESET_TIME and reset_time < MAX_RESET_TIME:
             sleep(0.01)
-            self._update_state(0.0)
+            if abs(self._state[ALPHA]) < ALPHA_THRESH:
+                time_under_thresh += 0.01
+            else:
+                time_under_thresh = 0
             reset_time += 0.01
+            self._update_state(0.0)
 
         if reset_time >= MAX_RESET_TIME:
             logging.error("Reset timeout")
@@ -64,6 +74,7 @@ class FurutaReal(FurutaBase):
     # replace by taking webcam snapshot
     # and outputing rgb array?
     # but webcam can't record at 100hz
+    # or could just use the same render function!!!
     # def render(self, mode='human'):
     #     raise NotImplementedError
 
