@@ -1,5 +1,14 @@
 # import common wrappers between sim/real
 defaults:
   - base_wrappers
-# add wrappers specific to the robot:
-# gently terminating and rate limiter
+
+GentlyTerminating:
+  module: "furuta.rl.wrappers"
+
+ControlFrequency:
+  module: "furuta.rl.wrappers"
+# TODO update mcap logger to take terminated and truncated
+# MCAPLogger:
+#   module: "furuta.rl.wrappers"
+#   use_sim_time: False
+#   log_dir: "mcap_logs/"

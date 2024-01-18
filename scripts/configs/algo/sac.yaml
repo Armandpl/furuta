@@ -12,6 +12,5 @@ learning_starts: 500
 use_sde: True
 use_sde_at_warmup: True
 sde_sample_freq: 64
-# train_freq: [1, "episode"]
-train_freq: 1
+train_freq: 1 # 1 step
 gradient_steps: -1

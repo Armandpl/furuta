@@ -1,0 +1,5 @@
+defaults:
+  - sac
+
+sde_sample_freq: 32
+train_freq: [1, "episode"]
