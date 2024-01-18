@@ -47,7 +47,7 @@ def main(cfg: DictConfig):
     seed_everything(env, cfg.seed, cfg.cudnn_deterministic)
 
     # setup wrappers
-    for wrapper in cfg.wrappers:
+    for wrapper in cfg.wrappers.wrappers:
         env = hydra.utils.instantiate(wrapper, env=env)
 
     # don't paralelize if it's the real robot

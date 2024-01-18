@@ -1,8 +1,9 @@
 # import common wrappers between sim/real
 defaults:
-  - base_wrappers
+  - base_wrappers@_here_
 
-- _target_: furuta.rl.wrappers.GentlyTerminating
-- _target_: furuta.rl.wrappers.ControlFrequency
+wrappers:
+  - _target_: furuta.rl.wrappers.GentlyTerminating
+  - _target_: furuta.rl.wrappers.ControlFrequency
 # - _target_: furuta.rl.wrappers.MCAPLogger
 #   use_sim_time: False
