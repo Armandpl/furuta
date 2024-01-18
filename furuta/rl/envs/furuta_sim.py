@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional, Union
 
 import gymnasium as gym
 import numpy as np
@@ -15,13 +15,14 @@ class FurutaSim(FurutaBase):
         dyn: QubeDynamics = QubeDynamics(),
         control_freq=50,
         reward="alpha",
-        state_limits=[np.pi, 2 * np.pi, 20, 20],
-        encoders_CPRs=None,
+        angle_limits=None,
+        speed_limits=None,
+        encoders_CPRs: Optional[List[int]] = None,
         velocity_filter: int = None,
         render_mode="rgb_array",
     ):
 
-        super().__init__(control_freq, reward, state_limits, render_mode)
+        super().__init__(control_freq, reward, angle_limits, speed_limits, render_mode)
         self.dyn = dyn
 
         self.encoders_CPRs = encoders_CPRs
@@ -64,12 +65,12 @@ class FurutaSim(FurutaBase):
         # do this by rounding _simulation_state[THETA/ALPHA] to the nearest multiple of 2pi/CPRs
         if self.encoders_CPRs:
             # TODO dedupe code here
-            theta_increment = 2 * np.pi / self.encoders_CPRs["motor_encoder_CPRs"]
+            theta_increment = 2 * np.pi / self.encoders_CPRs[THETA]
             self._state[THETA] = (
                 np.round(self._simulation_state[THETA] / theta_increment) * theta_increment
             )
 
-            alpha_increment = 2 * np.pi / self.encoders_CPRs["pendulum_encoder_CPRs"]
+            alpha_increment = 2 * np.pi / self.encoders_CPRs[ALPHA]
             self._state[ALPHA] = (
                 np.round(self._simulation_state[ALPHA] / alpha_increment) * alpha_increment
             )
@@ -89,8 +90,7 @@ class FurutaSim(FurutaBase):
         seed: Optional[int] = None,
         options: Optional[dict] = None,
     ):
-        if options is None:
-            options = {}
+        super().reset(seed=seed)
         self._init_state()
         obs = self.get_obs()
         return obs, {}

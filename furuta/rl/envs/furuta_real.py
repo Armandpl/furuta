@@ -20,10 +20,11 @@ class FurutaReal(FurutaBase):
         self,
         control_freq=100,
         reward="alpha_theta",
-        state_limits=None,
+        angle_limits=None,
+        speed_limits=None,
         usb_device="/dev/ttyACM0",
     ):
-        super().__init__(control_freq, reward, state_limits)
+        super().__init__(control_freq, reward, angle_limits, speed_limits)
 
         self.robot = Robot(usb_device)
 
@@ -45,6 +46,7 @@ class FurutaReal(FurutaBase):
         seed: Optional[int] = None,
         options: Optional[dict] = None,
     ):
+        super().reset(seed=seed)
         logging.info("Reset env...")
 
         # wait for pendulum to fall back to start position
