@@ -28,9 +28,12 @@ class FurutaReal(FurutaBase):
 
         self.robot = Robot(usb_device)
 
-        self.vel_filt = VelocityFilter(2, dt=self.timing.dt)
+        self._init_vel_filt()
 
         self._update_state(0.0)
+
+    def _init_vel_filt(self):
+        self.vel_filt = VelocityFilter(2, dt=self.timing.dt)
 
     def _update_state(self, action):
         motor_angle, pendulum_angle = self.robot.step(action)
@@ -70,6 +73,9 @@ class FurutaReal(FurutaBase):
 
         logging.info("Reset done")
         self._update_state(0.0)
+        # else the first computed velocity will take into account previous episode
+        # and it'll be huge and wrong and will terminate the episode
+        self._init_vel_filt()
         return self.get_obs(), {}
 
     # TODO: override parent render function

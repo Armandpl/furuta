@@ -27,8 +27,12 @@ class FurutaSim(FurutaBase):
 
         self.encoders_CPRs = encoders_CPRs
 
-        if velocity_filter:
-            self.vel_filt = VelocityFilter(velocity_filter, dt=self.timing.dt)
+        self.velocity_filter = velocity_filter
+        self._init_vel_filt()
+
+    def _init_vel_filt(self):
+        if self.velocity_filter:
+            self.vel_filt = VelocityFilter(self.velocity_filter, dt=self.timing.dt)
         else:
             self.vel_filt = None
 
@@ -93,6 +97,7 @@ class FurutaSim(FurutaBase):
         super().reset(seed=seed)
         self._init_state()
         obs = self.get_obs()
+        self._init_vel_filt()
         return obs, {}
 
 
