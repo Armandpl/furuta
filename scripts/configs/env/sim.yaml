@@ -5,7 +5,8 @@ defaults:
 _target_: furuta.rl.envs.furuta_sim.FurutaSim
 control_freq: 50
 reward: "alpha"
-state_limits: [3.14, 12, 50, 400] # TODO how to use PI in configs?
+angle_limits: [6.3, 12]
+speed_limits: [60, 400]
 encoders_CPRs: null
 velocity_filter: 2
 render_mode: "rgb_array"

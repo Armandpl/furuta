@@ -32,5 +32,5 @@ replay_buffer_artifact: null
 model_artifact: null
 
 # logging
-save_model: False
+save_model: True
 save_replay_buffer: False

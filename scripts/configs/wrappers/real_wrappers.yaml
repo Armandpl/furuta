@@ -2,13 +2,7 @@
 defaults:
   - base_wrappers
 
-GentlyTerminating:
-  module: "furuta.rl.wrappers"
-
-ControlFrequency:
-  module: "furuta.rl.wrappers"
-# TODO update mcap logger to take terminated and truncated
-# MCAPLogger:
-#   module: "furuta.rl.wrappers"
+- _target_: furuta.rl.wrappers.GentlyTerminating
+- _target_: furuta.rl.wrappers.ControlFrequency
+# - _target_: furuta.rl.wrappers.MCAPLogger
 #   use_sim_time: False
-#   log_dir: "mcap_logs/"

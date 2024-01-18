@@ -1,14 +1,8 @@
-# slightly unsure if wrappers will be applied in the order they are listed here
-# looks like the order is preserved but unsure if there could be edge cases?
-# the order of the wrappers is important
-TimeLimit:
-  module: "gymnasium.wrappers"
+- _target_: gymnasium.wrappers.TimeLimit
   max_episode_steps: 1000
 
-HistoryWrapper:
-  module: "furuta.rl.wrappers"
+- _target_: furuta.rl.wrappers.HistoryWrapper
   steps: 2
   use_continuity_cost: True
 
-Monitor:
-  module: "stable_baselines3.common.monitor"
+- _target_: stable_baselines3.common.monitor.Monitor
