@@ -31,7 +31,7 @@ class FurutaSim(FurutaBase):
         else:
             self.vel_filt = None
 
-    def _init_state(self, random_init: bool = True):
+    def _init_state(self):
         # TODO could also sample from state space
         # though we also use it as upper speed limit
         # the two use case are kind of conflicting
@@ -91,7 +91,7 @@ class FurutaSim(FurutaBase):
     ):
         if options is None:
             options = {}
-        self._init_state(options.get("random_init", True))
+        self._init_state()
         obs = self.get_obs()
         return obs, {}
 
