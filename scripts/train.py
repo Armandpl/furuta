@@ -55,8 +55,6 @@ def main(cfg: DictConfig):
         vec_env = DummyVecEnv([lambda: env])
         if cfg.n_envs > 1:
             logging.warning("n_envs > 1 but using real robot, ignoring n_envs")
-    elif cfg.n_envs == 1:
-        vec_env = DummyVecEnv([lambda: env])
     else:
         vec_env = SubprocVecEnv([lambda: copy.deepcopy(env) for _ in range(cfg.n_envs)])
 
