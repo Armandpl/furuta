@@ -7,7 +7,7 @@ defaults:
   - algo: sac.yaml
 
 total_timesteps: 500_000
-n_envs: 4
+n_envs: 12
 
 # eval & early stopping
 evaluation:
@@ -25,7 +25,7 @@ debug: True
 capture_video: True
 wandb:
   entity: null
-  project: furuta
+  project: furuta2
 
 # resume training: load replay buffer and/or model
 replay_buffer_artifact: null
