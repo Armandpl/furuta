@@ -9,12 +9,14 @@ import wandb
 
 
 def seed_everything(env, seed, cudnn_deterministic):
+    # got this from cleanrl
     env.action_space.seed(seed)
     env.observation_space.seed(seed)
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.backends.cudnn.deterministic = cudnn_deterministic
+    env.reset(seed=seed)
 
 
 def download_artifact_file(artifact_alias, filename):
