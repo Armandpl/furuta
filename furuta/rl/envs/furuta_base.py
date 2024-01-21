@@ -8,13 +8,7 @@ from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, Timing
 
 
 def alpha_reward(state):
-    try:
-        rwd = (1 + -np.cos(state[ALPHA])) / 2
-    except Exception as e:  # TODO why would this fail?
-        print(e)
-        print(state)
-
-    return rwd
+    return (1 + -np.cos(state[ALPHA])) / 2
 
 
 def alpha_theta_reward(state):
