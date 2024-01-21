@@ -55,10 +55,9 @@ class FurutaBase(gym.Env):
         if speed_limits is None:
             speed_limits = [np.inf, np.inf]
 
-        state_limits = np.array(
-            [angle_limits[0], angle_limits[1], speed_limits[0], speed_limits[1]]
+        self.state_max = np.array(
+            [angle_limits[0], angle_limits[1], speed_limits[0], speed_limits[1]], dtype=np.float32
         )
-        self.state_max = np.array(state_limits, dtype=np.float32)
 
         # max obs based on max speeds measured on the robot
         # in sim the speeds spike at 30 rad/s
