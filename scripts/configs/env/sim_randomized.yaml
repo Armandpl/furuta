@@ -1,3 +1,3 @@
 defaults:
   - sim
-  - dyn: tiny_randomized
+  - override dyn: tiny_randomized
