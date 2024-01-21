@@ -37,15 +37,18 @@ class QubeDynamics:
     def __init__(
         self,
         g=9.81,
-        Rm=8.4,
-        V=12.0,
-        km=0.042,
-        Mr=0.095,
-        Lr=0.085,
-        Dr=5e-6,
-        Mp=0.024,
-        Lp=0.129,
-        Dp=1e-6,
+        # Motor
+        Rm=8.4,  # reskstance (rated voltage/stall current)
+        V=12.0,  # nominal voltage
+        km=0.042,  # back-emf constant (V-s/rad) = (rated voltage / no load speed)
+        # Rotary Arm
+        Mr=0.095,  # mass (kg)
+        Lr=0.085,  # length (m)
+        Dr=5e-6,  # viscous damping (N-m-s/rad), original: 0.0015
+        # Pendulum Link
+        Mp=0.024,  # mass (kg)
+        Lp=0.129,  # length (m)
+        Dp=1e-6,  # viscous damping (N-m-s/rad), original: 0.0005
     ):
         # Gravity
         self.g = g
@@ -54,7 +57,6 @@ class QubeDynamics:
         self.Rm = Rm
         self.V = V
 
-        # back-emf constant (V-s/rad)
         self.km = km
 
         # Rotary arm
