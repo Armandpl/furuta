@@ -61,7 +61,12 @@ def main(cfg: DictConfig):
     # setup algo/model
     verbose = 2 if cfg.debug else 0
     model = hydra.utils.instantiate(
-        cfg.algo, env=vec_env, tensorboard_log=f"runs/{run.id}", verbose=verbose, _convert_="all"
+        cfg.algo,
+        env=vec_env,
+        tensorboard_log=f"runs/{run.id}",
+        verbose=verbose,
+        _convert_="all",
+        _recursive_=True,
     )
 
     # load model/replay buffer
@@ -74,18 +79,18 @@ def main(cfg: DictConfig):
 
     # Stop training when the model reaches the reward threshold
     eval_callback = None
-    if cfg.evaluation.early_stopping_reward_threshold:
+    if cfg.evaluation.eval_freq is not None:
         # TODO seems like weird things happen when we use the same env for training and eval
         # e.g we get stuck in eval mode
         eval_env = copy.deepcopy(env)
-        callback_on_best = StopTrainingOnRewardThreshold(
-            reward_threshold=cfg.evaluation.early_stopping_reward_threshold, verbose=1
-        )
-        # use same env for eval
-        # TODO maybe do eval even when we don't want to early stop?
-        # would it be useful?
-        # accounting for vec envs
+        if cfg.evaluation.early_stopping_reward_threshold is not None:
+            callback_on_best = StopTrainingOnRewardThreshold(
+                reward_threshold=cfg.evaluation.early_stopping_reward_threshold, verbose=1
+            )
+        else:
+            callback_on_best = None
 
+        # account for vec env, see sb3 doc
         eval_freq = max(cfg.evaluation.eval_freq // cfg.n_envs, 1)
         eval_callback = EvalCallback(
             eval_env,
