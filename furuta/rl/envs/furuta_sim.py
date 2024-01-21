@@ -17,7 +17,7 @@ class FurutaSim(FurutaBase):
         reward="alpha",
         angle_limits=None,
         speed_limits=None,
-        encoders_CPRs: Optional[List[int]] = None,
+        encoders_CPRs: Optional[List[float]] = None,
         velocity_filter: int = None,
         render_mode="rgb_array",
     ):
