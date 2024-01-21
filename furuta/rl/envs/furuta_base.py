@@ -60,10 +60,12 @@ class FurutaBase(gym.Env):
         )
 
         # max obs based on max speeds measured on the robot
-        # in sim the speeds spike at 30 rad/s
+        # in sim the speeds spike at 30 rad/s when trained
+        # selected 50 rad/s to be safe bc its probably higher during training
         # it's also ok if the speeds exceed theses values as we only use them for rescaling
         # and it's okay if the nn sees values a little bit above 1
-        obs_max = np.array([1.0, 1.0, 1.0, 1.0, 30, 30], dtype=np.float32)
+        # obs is [cos(th), sin(th), cos(al), sin(al), th_d, al_d)]
+        obs_max = np.array([1.0, 1.0, 1.0, 1.0, 50, 50], dtype=np.float32)
 
         # Spaces
         self.state_space = Box(
