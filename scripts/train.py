@@ -104,9 +104,6 @@ def main(cfg: DictConfig):
 
     # only save last video
     if cfg.capture_video:
-        # TODO add headless arg, depends on the machine
-        # import pyvirtualdisplay
-        # pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
         video_length = 500
         env = DummyVecEnv([lambda: env])
         env = VecVideoRecorder(
