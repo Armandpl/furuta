@@ -53,23 +53,31 @@ class Data:
         plt.show()
 
 
-class SafetyMonitor:
-    def __init__(self):
+class SafeRobot(Robot):
+    def __init__(self, device: str):
+        super().__init__(device)
         self.motor_max_number_rev = 0.5
         self.pendulum_angle_threshold = np.deg2rad(60)
         self.pendulum_setpoint = np.pi
 
-    def run_checks(self, data: Data):
-        if self.is_motor_out_of_bounds(data.motor_angles[-1]):
+    def step(self, action):
+        motor_angle, pendulum_angle = super().step(action)
+        self._run_checks(motor_angle, np.mod(pendulum_angle, 2 * np.pi))
+        return motor_angle, pendulum_angle
+
+    def _run_checks(self, motor_angle: float, pendulum_angle: float):
+        if self._is_motor_out_of_bounds(motor_angle):
+            super().step(0)
             raise ValueError("Motor is out of bounds")
 
-        if self.has_pendulum_fallen(data.pendulum_angles[-1]):
+        if self._has_pendulum_fallen(pendulum_angle):
+            super().step(0)
             raise ValueError("Pendulum has fallen")
 
-    def has_pendulum_fallen(self, pendulum_angle: float):
+    def _has_pendulum_fallen(self, pendulum_angle: float):
         return np.abs(pendulum_angle - self.pendulum_setpoint) > self.pendulum_angle_threshold
 
-    def is_motor_out_of_bounds(self, motor_angle: float):
+    def _is_motor_out_of_bounds(self, motor_angle: float):
         return np.abs(motor_angle) > self.motor_max_number_rev * 2 * np.pi
 
 
@@ -77,11 +85,8 @@ def main():
     # Read parameters from the .json file, angles are in degrees
     parameters = read_parameters_file(PARAMETERS_PATH)
 
-    # Init robot
-    robot = Robot(DEVICE)
-
-    # Init safety monitor
-    safety_monitor = SafetyMonitor()
+    # Init safe robot
+    robot = SafeRobot(DEVICE)
 
     # Init data logger
     data = Data()
@@ -115,8 +120,12 @@ def main():
         # Clip the command between -1 and 1
         action = np.clip(action, -1, 1)
 
-        # Call the step function and get the motor and pendulum angles
-        motor_angle, pendulum_angle = robot.step(action)
+        try:
+            # Call the step function and get the motor and pendulum angles
+            motor_angle, pendulum_angle = robot.step(action)
+        except ValueError as error_message:
+            print(error_message)
+            break
 
         # Take the modulus of the pendulum angle between 0 and 2pi
         pendulum_angle = np.mod(pendulum_angle, 2 * np.pi)
@@ -125,13 +134,6 @@ def main():
         data.log_action(action)
         data.log_motor_angle(motor_angle)
         data.log_pendulum_angle(pendulum_angle)
-
-        # Safety checks
-        try:
-            safety_monitor.run_checks(data)
-        except ValueError as e:
-            print(e)
-            break
 
     # Close the serial connection
     robot.close()
