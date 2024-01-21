@@ -53,32 +53,40 @@ class Data:
         plt.show()
 
 
-class SafeRobot(Robot):
-    def __init__(self, device: str):
-        super().__init__(device)
-        self.motor_max_number_rev = 0.5
-        self.pendulum_angle_threshold = np.deg2rad(60)
-        self.pendulum_setpoint = np.pi
+class SafeRobotWrapper:
+    def __init__(self, robot: Robot):
+        self.robot = robot
+        self.__motor_max_number_rev = 0.5
+        self.__pendulum_angle_threshold = np.deg2rad(60)
+        self.__pendulum_setpoint = np.pi
+
+    def reset_encoders(self):
+        self.robot.reset_encoders()
+
+    def close(self):
+        self.robot.close()
 
     def step(self, action):
-        motor_angle, pendulum_angle = super().step(action)
-        self._run_checks(motor_angle, np.mod(pendulum_angle, 2 * np.pi))
+        # Perform the action
+        motor_angle, pendulum_angle = self.robot.step(action)
+
+        # Run safety checks
+        self.__run_checks(motor_angle, np.mod(pendulum_angle, 2 * np.pi))
+
         return motor_angle, pendulum_angle
 
-    def _run_checks(self, motor_angle: float, pendulum_angle: float):
-        if self._is_motor_out_of_bounds(motor_angle):
-            super().step(0)
+    def __run_checks(self, motor_angle: float, pendulum_angle: float):
+        if self.__is_motor_out_of_bounds(motor_angle):
             raise ValueError("Motor is out of bounds")
 
-        if self._has_pendulum_fallen(pendulum_angle):
-            super().step(0)
+        if self.__has_pendulum_fallen(pendulum_angle):
             raise ValueError("Pendulum has fallen")
 
-    def _has_pendulum_fallen(self, pendulum_angle: float):
-        return np.abs(pendulum_angle - self.pendulum_setpoint) > self.pendulum_angle_threshold
+    def __has_pendulum_fallen(self, pendulum_angle):
+        return np.abs(pendulum_angle - self.__pendulum_setpoint) > self.__pendulum_angle_threshold
 
-    def _is_motor_out_of_bounds(self, motor_angle: float):
-        return np.abs(motor_angle) > self.motor_max_number_rev * 2 * np.pi
+    def __is_motor_out_of_bounds(self, motor_angle):
+        return np.abs(motor_angle) > self.__motor_max_number_rev * 2 * np.pi
 
 
 def main():
@@ -86,7 +94,7 @@ def main():
     parameters = read_parameters_file(PARAMETERS_PATH)
 
     # Init safe robot
-    robot = SafeRobot(DEVICE)
+    robot = SafeRobotWrapper(Robot(DEVICE))
 
     # Init data logger
     data = Data()
@@ -120,8 +128,8 @@ def main():
         # Clip the command between -1 and 1
         action = np.clip(action, -1, 1)
 
+        # Call the step function and get the motor and pendulum angles
         try:
-            # Call the step function and get the motor and pendulum angles
             motor_angle, pendulum_angle = robot.step(action)
         except ValueError as error_message:
             print(error_message)
