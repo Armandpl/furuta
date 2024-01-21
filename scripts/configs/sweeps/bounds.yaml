@@ -2,9 +2,9 @@ program: train.py
 method: grid
 parameters:
   env.angle_limits:
-    values: [null, [3.14, 6.3], [3.14, 400], [400, 6.3], [12, 6.3]]
+    values: [[400, 400], [3.14, 6.3], [3.14, 400], [400, 6.3], [12, 6.3]]
   env.speed_limits:
-    values: [null, [30, 400], [60, 400], [120, 400]]
+    values: [[400, 400], [30, 400], [60, 400], [120, 400]]
   seed:
     values: [1, 2, 3]
 

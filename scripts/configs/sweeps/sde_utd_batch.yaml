@@ -1,0 +1,18 @@
+program: train.py
+method: grid
+parameters:
+  algo.sde_sample_freq:
+    values: [8, 32, 64]
+  algo.gradient_steps:
+    values: [-1, 10, 20]
+  algo.batch_size:
+    values: [256, 64, 2048]
+  seed:
+    values: [1, 2, 3]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}
+  - +experiment=sim
