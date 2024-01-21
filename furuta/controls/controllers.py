@@ -12,11 +12,15 @@ class Controller(ABC):
     @staticmethod
     def build_controller(parameters: dict):
         controller_type = parameters["controller_type"]
-        match controller_type:
-            case "PIDController":
-                return PIDController(parameters)
-            case _:
-                raise ValueError(f"Invalid controller type: {controller_type}")
+        # match controller_type:
+        #     case "PIDController":
+        #         return PIDController(parameters)
+        #     case _:
+        #         raise ValueError(f"Invalid controller type: {controller_type}")
+        if controller_type == "PIDController":
+            return PIDController(parameters)
+        else:
+            raise ValueError(f"Invalid controller type: {controller_type}")
 
 
 class PIDController(Controller):

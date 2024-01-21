@@ -1,0 +1,8 @@
+defaults:
+  - _self_
+  - env: real
+  - wrappers: real_wrappers
+
+model_artifact: "model:latest"
+render: False
+nb_episodes: 1

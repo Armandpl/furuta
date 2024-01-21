@@ -1,26 +1,18 @@
-from collections import namedtuple
-from dataclasses import dataclass
-from math import cos, sin
+from typing import Optional
 
-import gym
+import gymnasium as gym
 import numpy as np
-from gym.spaces import Box
+from gymnasium.spaces import Box
 
 from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, Timing
 
 
 def alpha_reward(state):
-    try:
-        rwd = (1 + -cos(state[ALPHA])) / 2
-    except Exception as e:
-        print(e)
-        print(state)
-
-    return rwd
+    return (1 + -np.cos(state[ALPHA])) / 2
 
 
 def alpha_theta_reward(state):
-    return alpha_reward(state) + (1 + cos(state[THETA])) / 2
+    return alpha_reward(state) + (1 + np.cos(state[THETA])) / 2
 
 
 REWARDS = {
@@ -30,92 +22,93 @@ REWARDS = {
 
 
 class FurutaBase(gym.Env):
-    metadata = {"render.modes": ["rgb_array"]}  # TODO add headless mode
+    metadata = {
+        "render_modes": ["rgb_array", "human"],
+        "render_fps": 50,  # TODO should this be the same as the control freq/sim dt?
+    }
 
-    def __init__(self, fs, reward, state_limits=None):
+    def __init__(
+        self,
+        control_freq,
+        reward,
+        angle_limits=[np.pi, np.pi],  # used to help convergence?
+        speed_limits=[60, 400],  # used to avoid damaging the real robot or diverging sim
+        render_mode="rgb_array",
+    ):
+        self.render_mode = render_mode
 
-        self.timing = Timing(fs)
-        self.viewer = None
+        self.timing = Timing(control_freq)
         self._state = None
         self.reward = reward
 
-        self._reward_func = REWARDS[self.reward.name]
+        self.screen_width = 600
+        self.screen_height = 400
+        self.screen = None
+        self.clock = None
+
+        self._reward_func = REWARDS[self.reward]
 
         act_max = np.array([1.0], dtype=np.float32)
 
-        if state_limits:
-            self.state_max = np.array(state_limits, dtype=np.float32)
-        else:
-            self.state_max = np.array([np.inf, np.inf, np.inf, np.inf], dtype=np.float32)
+        if angle_limits is None:
+            angle_limits = [np.inf, np.inf]
+        if speed_limits is None:
+            speed_limits = [np.inf, np.inf]
 
-        obs_max = np.array(
-            [1.0, 1.0, 1.0, 1.0, self.state_max[2], self.state_max[3]], dtype=np.float32
+        self.state_max = np.array(
+            [angle_limits[0], angle_limits[1], speed_limits[0], speed_limits[1]], dtype=np.float32
         )
+
+        # max obs based on max speeds measured on the robot
+        # in sim the speeds spike at 30 rad/s when trained
+        # selected 50 rad/s to be safe bc its probably higher during training
+        # it's also ok if the speeds exceed theses values as we only use them for rescaling
+        # and it's okay if the nn sees values a little bit above 1
+        # obs is [cos(th), sin(th), cos(al), sin(al), th_d, al_d)]
+        obs_max = np.array([1.0, 1.0, 1.0, 1.0, 50, 50], dtype=np.float32)
 
         # Spaces
         self.state_space = Box(
-            # labels=('theta', 'alpha', 'theta_dot', 'alpha_dot'),
+            # ('theta', 'alpha', 'theta_dot', 'alpha_dot'),
             low=-self.state_max,
             high=self.state_max,
             dtype=np.float32,
         )
 
         self.observation_space = Box(
-            # labels=('cos_th', 'sin_th', 'cos_al', 'sin_al', 'th_d', 'al_d'),
+            # ('cos_th', 'sin_th', 'cos_al', 'sin_al', 'th_d', 'al_d'),
             low=-obs_max,
             high=obs_max,
             dtype=np.float32,
         )
 
         self.action_space = Box(
-            # labels=('action',),
+            # ('action',),
             low=-act_max,
             high=act_max,
             dtype=np.float32,
         )
 
-    @profile
     def step(self, action):
-        # TODO this is slow, do we even need it?
-        # sb3 knows the env action space, probably it won't pass invalid actions
-
-        # assert a is not None, "Action should be not None"
-        # assert isinstance(a, np.ndarray), "The action should be a ndarray"
-        # assert np.all(not np.isnan(a)), "Action NaN is not a valid action"
-        # assert a.ndim == 1, "The action = {a} must be 1d but the input is {a.ndim}d"
-        # err_msg = f"{action!r} ({type(action)}) invalid"
-
-        # assert self.action_space.contains(action), "Action is not in action space"
-        # assert self._state is not None, "Call reset before using step method."
-
         # first read the robot/sim state
         rwd = self._reward_func(self._state)
         obs = self.get_obs()
 
-        info = {
-            "motor_angle": float(self._state[THETA]),
-            "pendulum_angle": float(self._state[ALPHA]),
-            "motor_angle_velocity": float(self._state[THETA_DOT]),
-            "pendulum_angle_velocity": float(self._state[ALPHA_DOT]),
-            "reward": float(rwd),
-            "action": float(action),
-        }
-
-        # then take action
+        # then take action/step the sim
         self._update_state(action[0])
 
-        done = not self.state_space.contains(self._state)
-        if done:
-            rwd -= self.reward.oob_penalty
+        terminated = not self.state_space.contains(self._state)
 
-        info["done"] = bool(done)
+        # if terminated:
+        #     rwd -= self.reward.oob_penalty
 
-        return obs, rwd, done, info
+        truncated = False
+
+        return obs, rwd, terminated, truncated, {}
 
     def get_obs(self):
         return np.float32(
             [
-                # TODO maybe call cos, sin at once? save a bit of time
                 np.cos(self._state[THETA]),
                 np.sin(self._state[THETA]),
                 np.cos(self._state[ALPHA]),
@@ -125,174 +118,112 @@ class FurutaBase(gym.Env):
             ]
         )
 
-    def reset(self):
-        raise NotImplementedError
+    def reset(
+        self,
+        seed: Optional[int] = None,
+        options: Optional[dict] = None,
+    ):
+        super().reset(seed=seed)
 
     def _update_state(self, a):
         raise NotImplementedError
 
-    def render(self, mode="rgb_array"):
-        if self.viewer is None:
-            self.viewer = CartPoleSwingUpViewer(world_width=(2 * np.pi))
+    def render(self):
+        # https://github.com/Farama-Foundation/Gymnasium/blob/6baf8708bfb08e37ce3027b529193169eaa230fd/gymnasium/envs/classic_control/cartpole.py#L229
+        if self.render_mode is None:
+            assert self.spec is not None
+            gym.logger.warn(
+                "You are calling render method without specifying any render mode. "
+                "You can specify the render_mode at initialization, "
+                f'e.g. gym.make("{self.spec.id}", render_mode="rgb_array")'
+            )
+            return
+
+        import pygame
+        from pygame import gfxdraw
+
+        if self.screen is None:
+            pygame.init()
+            if self.render_mode == "human":
+                pygame.display.init()
+                self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+            else:  # mode == "rgb_array"
+                self.screen = pygame.Surface((self.screen_width, self.screen_height))
+        if self.clock is None:
+            self.clock = pygame.time.Clock()
+
+        world_width = 2 * np.pi
+        scale = self.screen_width / world_width
+        polewidth = 10.0
+        polelen = scale * (2 * 0.5)  # TODO use the right pole len?
+        cartwidth = 50.0
+        cartheight = 30.0
 
         if self._state is None:
             return None
 
-        self.viewer.update(self._state)
-        return self.viewer.render(return_rgb_array=mode == "rgb_array")
+        x = self._state
 
+        self.surf = pygame.Surface((self.screen_width, self.screen_height))
+        self.surf.fill((255, 255, 255))
 
-@dataclass(frozen=True)
-class CartParams:
-    """Parameters defining the Cart."""
+        l, r, t, b = -cartwidth / 2, cartwidth / 2, cartheight / 2, -cartheight / 2
+        axleoffset = cartheight / 4.0
 
-    width: float = 1 / 3
-    height: float = 1 / 6
-    mass: float = 0.5
+        # make sure theta stays between -pi and pi
+        theta = (x[THETA] % (2 * np.pi)) - np.pi
+        cartx = theta * scale + self.screen_width / 2.0  # MIDDLE OF CART
+        carty = 100  # TOP OF CART
+        cart_coords = [(l, b), (l, t), (r, t), (r, b)]
+        cart_coords = [(c[0] + cartx, c[1] + carty) for c in cart_coords]
+        gfxdraw.aapolygon(self.surf, cart_coords, (0, 0, 0))
+        gfxdraw.filled_polygon(self.surf, cart_coords, (0, 0, 0))
 
-
-@dataclass(frozen=True)
-class PoleParams:
-    """Parameters defining the Pole."""
-
-    width: float = 0.05
-    length: float = 0.6
-    mass: float = 0.5
-
-
-Screen = namedtuple("Screen", "width height")
-
-
-class CartPoleSwingUpViewer:
-    """Class that encapsulates all the variables and objectecs needed to render a
-    CartPoleSwingUpEnv.
-
-    It handles all the initialization and updating of each object on screen and handles calls to
-    the underlying gym.envs.classic_control.rendering.Viewer instance.
-    """
-
-    screen = Screen(width=600, height=400)
-
-    def __init__(self, world_width):
-        # TODO: make sure that's not redundant
-        import pyglet
-        from gym.envs.classic_control import rendering
-
-        pyglet.options["headless"] = True  # noqa: F821
-
-        cart = CartParams()
-        pole = PoleParams()
-
-        self.cart = cart
-        self.pole = pole
-
-        self.world_width = world_width
-        screen = self.screen
-        scale = screen.width / self.world_width
-        cartwidth, cartheight = scale * cart.width, scale * cart.height
-        polewidth, polelength = scale * pole.width, scale * pole.length
-        self.viewer = rendering.Viewer(screen.width, screen.height)
-        self.transforms = {
-            "cart": rendering.Transform(),
-            "pole": rendering.Transform(translation=(0, 0)),
-            "pole_bob": rendering.Transform(),
-            "wheel_l": rendering.Transform(translation=(-cartwidth / 2, -cartheight / 2)),
-            "wheel_r": rendering.Transform(translation=(cartwidth / 2, -cartheight / 2)),
-        }
-
-        self._init_track(rendering, cartheight)
-        self._init_cart(rendering, cartwidth, cartheight)
-        self._init_wheels(rendering, cartheight)
-        self._init_pole(rendering, polewidth, polelength)
-        self._init_axle(rendering, polewidth)
-        # Make another circle on the top of the pole
-        self._init_pole_bob(rendering, polewidth)
-
-    def _init_track(self, rendering, cartheight):
-        screen = self.screen
-        carty = screen.height / 2
-        track_height = carty - cartheight / 2 - cartheight / 4
-        track = rendering.Line((0, track_height), (screen.width, track_height))
-        track.set_color(0, 0, 0)
-        self.viewer.add_geom(track)
-
-    def _init_cart(self, rendering, cartwidth, cartheight):
-        lef, rig, top, bot = (
-            -cartwidth / 2,
-            cartwidth / 2,
-            cartheight / 2,
-            -cartheight / 2,
-        )
-        cart = rendering.FilledPolygon([(lef, bot), (lef, top), (rig, top), (rig, bot)])
-        cart.add_attr(self.transforms["cart"])
-        cart.set_color(1, 0, 0)
-        self.viewer.add_geom(cart)
-
-    def _init_pole(self, rendering, polewidth, polelength):
-        lef, rig, top, bot = (
+        l, r, t, b = (
             -polewidth / 2,
             polewidth / 2,
-            polelength - polewidth / 2,
+            polelen - polewidth / 2,
             -polewidth / 2,
         )
-        pole = rendering.FilledPolygon([(lef, bot), (lef, top), (rig, top), (rig, bot)])
-        pole.set_color(0, 0, 1)
-        pole.add_attr(self.transforms["pole"])
-        pole.add_attr(self.transforms["cart"])
-        self.viewer.add_geom(pole)
 
-    def _init_axle(self, rendering, polewidth):
-        axle = rendering.make_circle(polewidth / 2)
-        axle.add_attr(self.transforms["pole"])
-        axle.add_attr(self.transforms["cart"])
-        axle.set_color(0.1, 1, 1)
-        self.viewer.add_geom(axle)
+        pole_coords = []
+        for coord in [(l, b), (l, t), (r, t), (r, b)]:
+            coord = pygame.math.Vector2(coord).rotate_rad(x[ALPHA] + np.pi)
+            coord = (coord[0] + cartx, coord[1] + carty + axleoffset)
+            pole_coords.append(coord)
+        gfxdraw.aapolygon(self.surf, pole_coords, (202, 152, 101))
+        gfxdraw.filled_polygon(self.surf, pole_coords, (202, 152, 101))
 
-    def _init_pole_bob(self, rendering, polewidth):
-        pole_bob = rendering.make_circle(polewidth / 2)
-        pole_bob.add_attr(self.transforms["pole_bob"])
-        pole_bob.add_attr(self.transforms["pole"])
-        pole_bob.add_attr(self.transforms["cart"])
-        pole_bob.set_color(0, 0, 0)
-        self.viewer.add_geom(pole_bob)
-
-    def _init_wheels(self, rendering, cartheight):
-        wheel_l = rendering.make_circle(cartheight / 4)
-        wheel_r = rendering.make_circle(cartheight / 4)
-        wheel_l.add_attr(self.transforms["wheel_l"])
-        wheel_l.add_attr(self.transforms["cart"])
-        wheel_r.add_attr(self.transforms["wheel_r"])
-        wheel_r.add_attr(self.transforms["cart"])
-        wheel_l.set_color(0, 0, 0)  # Black, (B, G, R)
-        wheel_r.set_color(0, 0, 0)  # Black, (B, G, R)
-        self.viewer.add_geom(wheel_l)
-        self.viewer.add_geom(wheel_r)
-
-    def update(self, state):
-        """Updates the positions of the objects on screen."""
-        screen = self.screen
-        scale = screen.width / self.world_width
-
-        th, al, _, _ = state
-        al = (al - np.pi) % (2 * np.pi)  # change angle origin
-
-        # keep th between -pi and pi
-        th = (th + np.pi) % (2 * np.pi) - np.pi
-
-        # use motor angle (theta) as cart x position
-        cartx = th * scale + screen.width / 2.0  # MIDDLE OF CART
-        carty = screen.height / 2
-
-        self.transforms["cart"].set_translation(cartx, carty)
-        self.transforms["pole"].set_rotation(al)
-        self.transforms["pole_bob"].set_translation(
-            -self.pole.length * np.sin(al), self.pole.length * np.cos(al)
+        gfxdraw.aacircle(
+            self.surf,
+            int(cartx),
+            int(carty + axleoffset),
+            int(polewidth / 2),
+            (129, 132, 203),
+        )
+        gfxdraw.filled_circle(
+            self.surf,
+            int(cartx),
+            int(carty + axleoffset),
+            int(polewidth / 2),
+            (129, 132, 203),
         )
 
-    def render(self, *args, **kwargs):
-        """Forwards the call to the underlying Viewer instance."""
-        return self.viewer.render(*args, **kwargs)
+        gfxdraw.hline(self.surf, 0, self.screen_width, carty, (0, 0, 0))
+
+        self.surf = pygame.transform.flip(self.surf, False, True)
+        self.screen.blit(self.surf, (0, 0))
+        if self.render_mode == "human":
+            pygame.event.pump()
+            self.clock.tick(self.metadata["render_fps"])
+            pygame.display.flip()
+
+        elif self.render_mode == "rgb_array":
+            return np.transpose(np.array(pygame.surfarray.pixels3d(self.screen)), axes=(1, 0, 2))
 
     def close(self):
-        """Closes the underlying Viewer instance."""
-        self.viewer.close()
+        if self.screen is not None:
+            import pygame
+
+            pygame.display.quit()
+            pygame.quit()

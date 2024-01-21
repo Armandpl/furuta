@@ -1,0 +1,12 @@
+defaults:
+  - _self_
+  - dyn: default
+
+_target_: furuta.rl.envs.furuta_sim.FurutaSim
+control_freq: 50
+reward: "alpha"
+angle_limits: [3.14, 12]
+speed_limits: [60, 400]
+encoders_CPRs: null
+velocity_filter: 2
+render_mode: "rgb_array"

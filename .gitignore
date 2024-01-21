@@ -1,4 +1,5 @@
 **/videos/*
+**/outputs/*
 **/wandb/*
 **/runs/*
 **/models/*
@@ -124,7 +125,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
-env/
+# env/ bc we use env for gym env config but have no env/ dir for actual venvs
 venv/
 ENV/
 env.bak/

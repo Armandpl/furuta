@@ -6,15 +6,15 @@ defaults:
   - wrappers: ???
   - algo: sac.yaml
 
-gym_id: ???
-total_timesteps: 1_000_000
+total_timesteps: 500_000
+n_envs: 12
 
 # eval & early stopping
 evaluation:
   early_stopping_reward_threshold: 800 # use null for no early stopping
   deterministic: True
   n_eval_episodes: 10
-  eval_freq: 500
+  eval_freq: 50_000
 
 # reproducibility
 seed: 1
@@ -25,13 +25,12 @@ debug: True
 capture_video: True
 wandb:
   entity: null
-  project: furuta
+  project: furuta2
 
 # resume training: load replay buffer and/or model
 replay_buffer_artifact: null
 model_artifact: null
 
 # logging
-save_model: False
+save_model: True
 save_replay_buffer: False
-# add mcap

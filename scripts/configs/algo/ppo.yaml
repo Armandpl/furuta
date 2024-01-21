@@ -1,0 +1,4 @@
+_target_: stable_baselines3.PPO
+policy: "MlpPolicy"
+use_sde: True
+sde_sample_freq: 64

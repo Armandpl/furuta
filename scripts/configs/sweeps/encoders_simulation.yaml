@@ -1,10 +1,8 @@
 program: train.py
 method: grid
 parameters:
-  env:
-    values: ["sim", "sim_encoders", "sim_precise_encoders"]
-  env.velocity_filter:
-    values: [null, 2, 3, 4, 10]
+  env.encoders_CPRs:
+    values: [[100, 4000.0], [211.2, 8192.0], [400.0, 16000.0]]
   seed:
     values: [1, 2, 3, 4]
 

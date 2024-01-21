@@ -1,75 +1,30 @@
 import copy
-import importlib
 import logging
-import os
-import random
-from pathlib import Path
 
-import gym
 import hydra
-import numpy as np
-import stable_baselines3
-import torch
-import wandb
 from omegaconf import DictConfig, OmegaConf, open_dict
 from stable_baselines3.common.callbacks import (
     EvalCallback,
     StopTrainingOnRewardThreshold,
 )
-from stable_baselines3.common.vec_env import DummyVecEnv, VecVideoRecorder
+from stable_baselines3.common.env_checker import check_env
+from stable_baselines3.common.vec_env import (
+    DummyVecEnv,
+    SubprocVecEnv,
+    VecVideoRecorder,
+)
 
-import furuta  # noqa F420
-
-# TODO
-# - save model/replay buffer X
-# - finish setup wrappers: think about how to setup; maybe have some hardcoded wrappers?
-# - load custom sim parameters X
-
-
-def download_artifact_file(artifact_alias, filename):
-    """Download artifact and returns path to filename.
-
-    :param artifact_name: wandb artifact alias
-    :param filename: filename in the artifact
-    """
-    logging.info(f"loading {filename} from {artifact_alias}")
-
-    artifact = wandb.use_artifact(artifact_alias)
-    artifact_dir = Path(artifact.download())
-    filepath = artifact_dir / filename
-
-    assert filepath.is_file(), f"{artifact_alias} doesn't contain {filename}"
-
-    return filepath
-
-
-def upload_file_to_artifacts(pth, artifact_name, artifact_type):
-    logging.info(f"Saving {pth} to {artifact_name}")
-    if not isinstance(pth, Path):
-        pth = Path(pth)
-
-    assert os.path.isfile(pth), f"{pth} is not a file"
-
-    artifact = wandb.Artifact(artifact_name, type=artifact_type)
-    artifact.add_file(pth)
-    wandb.log_artifact(artifact)
-
-
-def instantiate_gym_wrapper(wrapper_name: str, wrapper_args: DictConfig, env: gym.Env) -> gym.Env:
-    """Instantiate a gym wrapper from a config."""
-    module = importlib.import_module(wrapper_args.module)
-    wrapper_class = getattr(module, wrapper_name)
-
-    # pop module from DictConfig wrappers args
-    with open_dict(wrapper_args):
-        wrapper_args.pop("module")
-
-    return wrapper_class(env, **wrapper_args)
+import wandb
+from furuta.rl.envs.furuta_real import FurutaReal
+from furuta.rl.utils import (
+    download_artifact_file,
+    seed_everything,
+    upload_file_to_artifacts,
+)
 
 
 @hydra.main(version_base="1.3", config_path="configs", config_name="train.yaml")
 def main(cfg: DictConfig):
-    print(cfg)
 
     logging_level = logging.DEBUG if cfg.debug else logging.INFO
     logging.basicConfig(format="%(levelname)s: %(message)s", level=logging_level)
@@ -85,39 +40,36 @@ def main(cfg: DictConfig):
     )
 
     # setup env
-    env = gym.make(cfg.gym_id, **cfg.env)
+    env = hydra.utils.instantiate(cfg.env, _recursive_=True)
+    check_env(env)
 
     # seed everything
-    env.seed(cfg.seed)
-    env.action_space.seed(cfg.seed)
-    env.observation_space.seed(cfg.seed)
-    random.seed(cfg.seed)
-    np.random.seed(cfg.seed)
-    torch.manual_seed(cfg.seed)
-    torch.backends.cudnn.deterministic = cfg.cudnn_deterministic
+    seed_everything(env, cfg.seed, cfg.cudnn_deterministic)
 
     # setup wrappers
-    for wrapper_name, wrapper_args in cfg.wrappers.items():
-        try:
-            env = instantiate_gym_wrapper(wrapper_name, wrapper_args, env)
-        except Exception as e:
-            # print stack trace
-            logging.warning(e, exc_info=True)
+    for wrapper in cfg.wrappers:
+        env = hydra.utils.instantiate(wrapper, env=env)
+
+    # don't paralelize if it's the real robot
+    if isinstance(env.unwrapped, FurutaReal):
+        vec_env = DummyVecEnv([lambda: env])
+        if cfg.n_envs > 1:
+            logging.warning("n_envs > 1 but using real robot, ignoring n_envs")
+    else:
+        vec_env = SubprocVecEnv([lambda: copy.deepcopy(env) for _ in range(cfg.n_envs)])
 
     # setup algo/model
     verbose = 2 if cfg.debug else 0
     model = hydra.utils.instantiate(
-        cfg.algo, env=env, tensorboard_log=f"runs/{run.id}", verbose=verbose
+        cfg.algo, env=vec_env, tensorboard_log=f"runs/{run.id}", verbose=verbose, _convert_="all"
     )
 
     # load model/replay buffer
     if cfg.model_artifact:
-        model.load(download_artifact_file(f"model:{cfg.model_artifact}", "model.zip"))
+        model.load(download_artifact_file(cfg.model_artifact, "model.zip"))
 
     if cfg.replay_buffer_artifact:
-        rb_path = download_artifact_file(
-            f"replay_buffer:{cfg.replay_buffer_artifact}", "buffer.pkl"
-        )
+        rb_path = download_artifact_file(cfg.replay_buffer_artifact, "buffer.pkl")
         model.load_replay_buffer(rb_path)
 
     # Stop training when the model reaches the reward threshold
@@ -132,11 +84,14 @@ def main(cfg: DictConfig):
         # use same env for eval
         # TODO maybe do eval even when we don't want to early stop?
         # would it be useful?
+        # accounting for vec envs
+
+        eval_freq = max(cfg.evaluation.eval_freq // cfg.n_envs, 1)
         eval_callback = EvalCallback(
             eval_env,
             deterministic=cfg.evaluation.deterministic,
             n_eval_episodes=cfg.evaluation.n_eval_episodes,
-            eval_freq=cfg.evaluation.eval_freq,
+            eval_freq=eval_freq,
             callback_on_new_best=callback_on_best,
             verbose=1,
         )
@@ -149,9 +104,6 @@ def main(cfg: DictConfig):
 
     # only save last video
     if cfg.capture_video:
-        # TODO add headleas arg, depends on the machine
-        # import pyvirtualdisplay
-        # pyvirtualdisplay.Display(visible=0, size=(1400, 900)).start()
         video_length = 500
         env = DummyVecEnv([lambda: env])
         env = VecVideoRecorder(
@@ -172,15 +124,15 @@ def main(cfg: DictConfig):
 
     if cfg.save_model:
         logging.info("Saving model to artifacts")
-        model_path = f"runs/{run.id}/models/sac.zip"
+        model_path = f"runs/{run.id}/models/model.zip"
         model.save(model_path)
-        upload_file_to_artifacts(model_path, "sac_model", "model")
+        upload_file_to_artifacts(model_path, "model", "model")
 
     if cfg.save_replay_buffer:
         logging.info("Saving replay_buffer to artifacts")
         buffer_path = f"runs/{run.id}/buffers/buffer.pkl"
         model.save_replay_buffer(buffer_path)
-        upload_file_to_artifacts(buffer_path, "sac_replay_buffer", "replay buffer")
+        upload_file_to_artifacts(buffer_path, "replay_buffer", "replay buffer")
 
     env.close()
     run.finish()
