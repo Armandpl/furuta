@@ -95,6 +95,7 @@ class FurutaSim(FurutaBase):
         options: Optional[dict] = None,
     ):
         super().reset(seed=seed)
+        self.dyn.randomize()
         self._init_state()
         obs = self.get_obs()
         self._init_vel_filt()
