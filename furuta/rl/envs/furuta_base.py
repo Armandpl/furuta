@@ -129,6 +129,7 @@ class FurutaBase(gym.Env):
         raise NotImplementedError
 
     def render(self):
+        # https://github.com/Farama-Foundation/Gymnasium/blob/6baf8708bfb08e37ce3027b529193169eaa230fd/gymnasium/envs/classic_control/cartpole.py#L229
         if self.render_mode is None:
             assert self.spec is not None
             gym.logger.warn(
