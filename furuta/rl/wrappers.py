@@ -6,10 +6,10 @@ from typing import Optional, Union
 import gymnasium as gym
 import hydra
 import numpy as np
-import wandb
 from gymnasium.spaces import Box
 from mcap_protobuf.writer import Writer
 
+import wandb
 from furuta.logging.protobuf.pendulum_state_pb2 import PendulumState
 from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT
 
@@ -33,7 +33,13 @@ class GentlyTerminating(gym.Wrapper):
 
 
 class MCAPLogger(gym.Wrapper):
-    def __init__(self, env: gym.Env, use_sim_time: bool, log_dir: Union[str, Path] = None):
+    def __init__(
+        self,
+        env: gym.Env,
+        use_sim_time: bool,
+        log_dir: Union[str, Path] = None,
+        episodic: bool = True,
+    ):
         super().__init__(env)
 
         if log_dir:
@@ -46,6 +52,7 @@ class MCAPLogger(gym.Wrapper):
 
         self.episodes = 0
         self.mcap_writer = None
+        self.episodic = episodic
 
     def step(self, action):
         observation, reward, terminated, truncated, info = self.env.step(action)
@@ -82,13 +89,17 @@ class MCAPLogger(gym.Wrapper):
         if not self.log_dir.exists():
             self.log_dir.mkdir(parents=True)
 
-        # close previous log file
-        self.close_mcap_writer()
+        if self.episodic:
+            # close previous log file
+            self.close_mcap_writer()
+            fname = f"ep{self.episodes}_{time.strftime('%Y%m%d-%H%M%S')}.mcap"
+        else:
+            fname = f"{time.strftime('%Y%m%d-%H%M%S')}.mcap"
 
-        # instantiate a new MCAP writer
-        fname = f"ep{self.episodes}_{time.strftime('%Y%m%d-%H%M%S')}.mcap"
-        self.output_file = open(self.log_dir / fname, "wb")
-        self.mcap_writer = Writer(self.output_file)
+        if self.mcap_writer is None or self.episodic:
+            # instantiate a new MCAP writer
+            self.output_file = open(self.log_dir / fname, "wb")
+            self.mcap_writer = Writer(self.output_file)
 
         # TODO add metadata?
         # date, control frequency, wandb run id, sim parameters, robot parameters, etc.

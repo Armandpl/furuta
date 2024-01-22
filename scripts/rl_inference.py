@@ -32,7 +32,7 @@ def main(cfg: DictConfig):
     for wrapper in wrappers:
         env = hydra.utils.instantiate(wrapper, env=env)
 
-    env = MCAPLogger(env, use_sim_time=False, log_dir="./mcap_logs/")
+    env = MCAPLogger(env, use_sim_time=False, log_dir="./mcap_logs/", episodic=False)
 
     env = DummyVecEnv([lambda: env])
 
