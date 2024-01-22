@@ -3,6 +3,7 @@ from time import sleep
 from typing import Optional
 
 import numpy as np
+from simple_pid import PID
 
 from furuta.rl.envs.furuta_base import FurutaBase
 from furuta.robot import Robot
@@ -23,14 +24,13 @@ class FurutaReal(FurutaBase):
         angle_limits=None,
         speed_limits=None,
         usb_device="/dev/ttyACM0",
+        motor_stop_pid=[0.04, 0.0, 0.001],
     ):
         super().__init__(control_freq, reward, angle_limits, speed_limits)
+        self.motor_stop_pid = motor_stop_pid
 
         self.robot = Robot(usb_device)
-
-        self._init_vel_filt()
-
-        self._update_state(0.0)
+        self._state = None
 
     def _init_vel_filt(self):
         self.vel_filt = VelocityFilter(2, dt=self.timing.dt)
@@ -52,30 +52,43 @@ class FurutaReal(FurutaBase):
         super().reset(seed=seed)
         logging.info("Reset env...")
 
-        # wait for pendulum to fall back to start position
-        reset_time = 0
-        time_under_thresh = 0
+        if self._state is not None:  # if not first reset
+            logging.debug("Stopping motor")
+            motor_pid = PID(
+                self.motor_stop_pid[0],
+                self.motor_stop_pid[1],
+                self.motor_stop_pid[2],
+                setpoint=0.0,
+                output_limits=(-1, 1),
+            )
 
-        while time_under_thresh < RESET_TIME and reset_time < MAX_RESET_TIME:
-            sleep(0.01)
-            if abs(self._state[ALPHA]) < ALPHA_THRESH:
-                time_under_thresh += 0.01
-            else:
-                time_under_thresh = 0
-            reset_time += 0.01
-            self._update_state(0.0)
+            while abs(self._state[THETA_DOT]) > 0.5:
+                act = motor_pid(self._state[THETA_DOT])
+                self._update_state(act)
+                sleep(self.timing.dt)
 
-        if reset_time >= MAX_RESET_TIME:
-            logging.error("Reset timeout")
+            logging.debug("Waiting for pendulum to fall back down")
+            time_under_thresh = 0
+            reset_time = 0
+            while time_under_thresh < RESET_TIME and reset_time < MAX_RESET_TIME:
+                sleep(self.timing.dt)
+                if abs(self._state[ALPHA]) < ALPHA_THRESH:
+                    time_under_thresh += self.timing.dt
+                else:
+                    time_under_thresh = 0
+                self._update_state(0.0)
+
+            if reset_time >= MAX_RESET_TIME:
+                logging.info(f"Reset timeout, alpha: {self._state[ALPHA]}")
 
         # reset both encoder, motor back to pos=0
         self.robot.reset_encoders()
 
         logging.info("Reset done")
-        self._update_state(0.0)
         # else the first computed velocity will take into account previous episode
         # and it'll be huge and wrong and will terminate the episode
         self._init_vel_filt()
+        self._update_state(0.0)  # initial state
         return self.get_obs(), {}
 
     # TODO: override parent render function
