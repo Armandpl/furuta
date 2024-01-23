@@ -50,14 +50,14 @@ class FurutaBase(gym.Env):
 
         act_max = np.array([1.0], dtype=np.float32)
 
-        if angle_limits is None:
-            angle_limits = [np.inf, np.inf]
-        if speed_limits is None:
-            speed_limits = [np.inf, np.inf]
+        angle_limits = np.array(angle_limits, dtype=np.float32)
+        speed_limits = np.array(speed_limits, dtype=np.float32)
 
-        self.state_max = np.array(
-            [angle_limits[0], angle_limits[1], speed_limits[0], speed_limits[1]], dtype=np.float32
-        )
+        # replace none values with inf
+        angle_limits = np.where(angle_limits == None, np.inf, angle_limits)  # noqa
+        speed_limits = np.where(speed_limits == None, np.inf, speed_limits)  # noqa
+
+        self.state_max = np.concatenate([angle_limits, speed_limits])
 
         # max obs based on max speeds measured on the robot
         # in sim the speeds spike at 30 rad/s when trained
@@ -66,6 +66,12 @@ class FurutaBase(gym.Env):
         # and it's okay if the nn sees values a little bit above 1
         # obs is [cos(th), sin(th), cos(al), sin(al), th_d, al_d)]
         obs_max = np.array([1.0, 1.0, 1.0, 1.0, 30, 30], dtype=np.float32)
+
+        # if limit on angles, add them to the obs
+        if not np.isinf(self.state_max[ALPHA]):
+            obs_max = np.concatenate([np.array([self.state_max[ALPHA]]), obs_max])
+        if not np.isinf(self.state_max[THETA]):
+            obs_max = np.concatenate([np.array([self.state_max[THETA]]), obs_max])
 
         # Spaces
         self.state_space = Box(
@@ -107,7 +113,7 @@ class FurutaBase(gym.Env):
         return obs, rwd, terminated, truncated, {}
 
     def get_obs(self):
-        return np.float32(
+        obs = np.float32(
             [
                 np.cos(self._state[THETA]),
                 np.sin(self._state[THETA]),
@@ -117,6 +123,12 @@ class FurutaBase(gym.Env):
                 self._state[ALPHA_DOT],
             ]
         )
+        if not np.isinf(self.state_max[ALPHA]):
+            obs = np.concatenate([np.array([self._state[ALPHA]]), obs])
+        if not np.isinf(self.state_max[THETA]):
+            obs = np.concatenate([np.array([self._state[THETA]]), obs])
+
+        return obs
 
     def reset(
         self,
