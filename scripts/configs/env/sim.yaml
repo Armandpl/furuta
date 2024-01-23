@@ -5,8 +5,8 @@ defaults:
 _target_: furuta.rl.envs.furuta_sim.FurutaSim
 control_freq: 50
 reward: "alpha"
-angle_limits: [12, 12]
-speed_limits: [120, 400]
+angle_limits: [1000, 12]
+speed_limits: [50, 1000]
 encoders_CPRs: null
 velocity_filter: 2
 render_mode: "rgb_array"

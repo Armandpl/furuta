@@ -23,6 +23,7 @@ opencv-python = "^4.9.0.80"
 hydra-core = "^1.3.2"
 tensorboard = "^2.15.1"
 moviepy = "^1.0.3"
+sb3-contrib = "^2.2.1"
 
 
 [tool.poetry.group.dev.dependencies]

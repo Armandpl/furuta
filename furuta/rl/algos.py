@@ -1,12 +1,10 @@
+import sb3_contrib
 import stable_baselines3
 
 
 # wrapper class for stable-baselines3.SAC
-# TODO can we make one class for all algos?
-# check if they all have the train freq param
-# check if they have other tuple args
-# check if it would be cleaner for sb3 to accept list instead of tuple?
-class SAC(stable_baselines3.SAC):
+# TODO is there a cleaner way to do this?
+class BaseAlgoWrapper:
     def __init__(self, **kwargs):
         # sb3 expects tuple, omegaconf returns list
         # so we need to convert kwarg train_freq from tuple to list
@@ -14,3 +12,11 @@ class SAC(stable_baselines3.SAC):
             kwargs.update({"train_freq": tuple(kwargs["train_freq"])})
 
         super().__init__(**kwargs)
+
+
+class SAC(BaseAlgoWrapper, stable_baselines3.SAC):
+    pass
+
+
+class TQC(BaseAlgoWrapper, sb3_contrib.TQC):
+    pass
