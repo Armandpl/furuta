@@ -24,12 +24,21 @@ class GentlyTerminating(gym.Wrapper):
             self.unwrapped.robot.step(0.0)
         return observation, reward, terminated, truncated, info
 
-    def reset(
-        self,
-        seed: Optional[int] = None,
-        options: Optional[dict] = None,
-    ):
-        return self.env.reset()
+
+class DeadZone(gym.Wrapper):
+    """On the real robot, if it isn't moving, a zero command won't move it.
+
+    When using gSDE, having actions that don't move the robot seem to cause isssues.
+    """
+
+    def __init__(self, env: gym.Env, deadzone: float = 0.1):
+        super().__init__(env)
+        self.deadzone = deadzone
+
+    def step(self, action):
+        action = np.sign(action) * (np.abs(action) * (1 - self.deadzone) + self.deadzone)
+        observation, reward, terminated, truncated, info = self.env.step(action)
+        return observation, reward, terminated, truncated, info
 
 
 class MCAPLogger(gym.Wrapper):
