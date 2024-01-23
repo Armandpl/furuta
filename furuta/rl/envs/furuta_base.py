@@ -54,8 +54,8 @@ class FurutaBase(gym.Env):
         speed_limits = np.array(speed_limits, dtype=np.float32)
 
         # replace none values with inf
-        angle_limits = np.where(angle_limits == None, np.inf, angle_limits)  # noqa
-        speed_limits = np.where(speed_limits == None, np.inf, speed_limits)  # noqa
+        angle_limits = np.where(np.isnan(angle_limits), np.inf, angle_limits)  # noqa
+        speed_limits = np.where(np.isnan(speed_limits), np.inf, speed_limits)  # noqa
 
         self.state_max = np.concatenate([angle_limits, speed_limits])
 
