@@ -1,5 +1,7 @@
 - _target_: gymnasium.wrappers.TimeLimit
-  max_episode_steps: 1000
+  max_episode_steps: 500
+- _target_: sb3_contrib.common.wrappers.time_feature.TimeFeatureWrapper
+  max_episode_steps: 500
 - _target_: furuta.rl.wrappers.HistoryWrapper
   steps: 2
   use_continuity_cost: True
