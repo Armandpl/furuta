@@ -7,6 +7,10 @@ from gymnasium.spaces import Box
 from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, Timing
 
 
+def exp_alpha_reward(state):
+    return np.exp(alpha_reward(state) * 4) / np.exp(4)
+
+
 def alpha_reward(state):
     return (1 + -np.cos(state[ALPHA])) / 2
 
@@ -17,6 +21,7 @@ def alpha_theta_reward(state):
 
 REWARDS = {
     "alpha": alpha_reward,
+    "exp_alpha": exp_alpha_reward,
     "alpha_theta": alpha_theta_reward,
 }
 
