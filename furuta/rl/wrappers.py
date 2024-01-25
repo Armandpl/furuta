@@ -31,12 +31,16 @@ class DeadZone(gym.Wrapper):
     When using gSDE, having actions that don't move the robot seem to cause isssues.
     """
 
-    def __init__(self, env: gym.Env, deadzone: float = 0.1):
+    def __init__(self, env: gym.Env, deadzone: float = 0.2, center: float = 0.01):
         super().__init__(env)
         self.deadzone = deadzone
+        self.center = center
 
     def step(self, action):
-        action = np.sign(action) * (np.abs(action) * (1 - self.deadzone) + self.deadzone)
+        if abs(action) > self.center:
+            action = np.sign(action) * (np.abs(action) * (1 - self.deadzone) + self.deadzone)
+        else:
+            action = np.zeros_like(action)
         observation, reward, terminated, truncated, info = self.env.step(action)
         return observation, reward, terminated, truncated, info
 
