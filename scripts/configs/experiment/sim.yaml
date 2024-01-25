@@ -4,6 +4,7 @@ defaults:
   - override /wrappers: base_wrappers
   - override /algo: tqc_real
 
+n_envs: 1
 gym_id: "FurutaSim-v0"
 total_timesteps: 200_000
 evaluation:
