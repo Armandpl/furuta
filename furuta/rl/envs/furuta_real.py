@@ -10,10 +10,11 @@ from furuta.robot import Robot
 from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, VelocityFilter
 
 MAX_RESET_TIME = 7  # seconds
+MAX_MOTOR_RESET_TIME = 0.2  # seconds
 RESET_TIME = 0.5
-ALPHA_THRESH = np.cos(np.deg2rad(
-    2
-))  # alpha should stay between -2 and 2 deg for 0.5 sec for us to consider the env reset
+ALPHA_THRESH = np.cos(
+    np.deg2rad(2)
+)  # alpha should stay between -2 and 2 deg for 0.5 sec for us to consider the env reset
 
 
 class FurutaReal(FurutaBase):
@@ -63,7 +64,7 @@ class FurutaReal(FurutaBase):
             )
 
             reset_time = 0
-            while abs(self._state[THETA_DOT]) > 0.5 and reset_time < MAX_RESET_TIME:
+            while abs(self._state[THETA_DOT]) > 0.5 and reset_time < MAX_MOTOR_RESET_TIME:
                 act = motor_pid(self._state[THETA_DOT])
                 self._update_state(act)
                 reset_time += self.timing.dt
