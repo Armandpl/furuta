@@ -4,9 +4,9 @@ defaults:
 
 _target_: furuta.rl.envs.furuta_sim.FurutaSim
 control_freq: 50
-reward: "alpha"
+reward: "exp_alpha"
 angle_limits: [31.4, 12] # can do 5 turns around theta, and 4 around alpha
-speed_limits: [50, null]
+speed_limits: [60, null]
 encoders_CPRs: null
 velocity_filter: 2
 render_mode: "rgb_array"
