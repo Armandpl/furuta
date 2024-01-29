@@ -1,4 +1,4 @@
-_target_: sbx.TQC
+_target_: furuta.rl.algos.TQC
 policy: "MlpPolicy"
 use_sde: True
 use_sde_at_warmup: True

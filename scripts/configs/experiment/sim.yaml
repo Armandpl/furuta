@@ -8,4 +8,4 @@ n_envs: 1
 gym_id: "FurutaSim-v0"
 total_timesteps: 150_000
 evaluation:
-  early_stopping_reward_threshold: null
+  early_stopping_reward_threshold: 400
