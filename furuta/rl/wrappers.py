@@ -28,17 +28,25 @@ class GentlyTerminating(gym.Wrapper):
 class DeadZone(gym.Wrapper):
     """On the real robot, if it isn't moving, a zero command won't move it.
 
-    When using gSDE, having actions that don't move the robot seem to cause isssues.
+    When using gSDE, having actions that don't move the robot seem to cause issues.
+
+    Also add the option to limit the max action because the robot can't really handle full power.
     """
 
-    def __init__(self, env: gym.Env, deadzone: float = 0.2, center: float = 0.01):
+    def __init__(
+        self, env: gym.Env, deadzone: float = 0.2, center: float = 0.01, max_act: float = 0.75
+    ):
         super().__init__(env)
         self.deadzone = deadzone
         self.center = center
+        self.max_act = max_act
 
     def step(self, action):
+        # TODO this only works if the action is between -1 and 1
         if abs(action) > self.center:
-            action = np.sign(action) * (np.abs(action) * (1 - self.deadzone) + self.deadzone)
+            action = np.sign(action) * (
+                np.abs(action) * (self.max_act - self.deadzone) + self.deadzone
+            )
         else:
             action = np.zeros_like(action)
         observation, reward, terminated, truncated, info = self.env.step(action)
