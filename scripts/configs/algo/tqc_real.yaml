@@ -3,7 +3,7 @@ policy: "MlpPolicy"
 use_sde: True
 use_sde_at_warmup: True
 sde_sample_freq: 64
-train_freq: 1
+train_freq: [1, "episode"]
 # gradient_steps: -1
 # stats_window_size: 10
 # device: "metal"
