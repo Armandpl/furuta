@@ -103,7 +103,7 @@ def main(cfg: DictConfig):
 
     try:
         logging.info("Starting to train")
-        model.learn(total_timesteps=cfg.total_timesteps, callback=eval_callback)
+        model.learn(total_timesteps=cfg.total_timesteps, callback=eval_callback, progress_bar=True)
     except KeyboardInterrupt:
         logging.info("Interupting training")
 

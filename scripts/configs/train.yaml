@@ -21,7 +21,7 @@ seed: 1
 cudnn_deterministic: True
 
 # plumbing/misc
-debug: True
+debug: False
 capture_video: True
 wandb:
   entity: null
@@ -32,5 +32,5 @@ replay_buffer_artifact: null
 model_artifact: null
 
 # logging
-save_model: True
+save_model: False
 save_replay_buffer: False
