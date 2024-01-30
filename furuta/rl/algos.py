@@ -1,4 +1,5 @@
-import SBX
+import sb3_contrib
+import sbx
 import stable_baselines3
 
 
@@ -18,5 +19,5 @@ class SAC(BaseAlgoWrapper, stable_baselines3.SAC):
     pass
 
 
-class TQC(BaseAlgoWrapper, SBX.TQC):
+class TQC(BaseAlgoWrapper, sb3_contrib.TQC):
     pass

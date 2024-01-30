@@ -23,9 +23,9 @@ opencv-python = "^4.9.0.80"
 hydra-core = "^1.3.2"
 tensorboard = "^2.15.1"
 moviepy = "^1.0.3"
-sb3-contrib = "^2.2.1"
 sbx-rl = "^0.10.0"
 jax-metal = {version = "^0.0.5", platform = "darwin"}
+sb3-contrib = {git = "https://github.com/Stable-Baselines-Team/stable-baselines3-contrib"}
 
 
 [tool.poetry.group.dev.dependencies]
