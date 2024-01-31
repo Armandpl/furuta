@@ -3,15 +3,13 @@ policy: "MlpPolicy"
 buffer_size: 100_000
 batch_size: 256
 top_quantiles_to_drop_per_net: 2
-learning_starts: 1000
+learning_starts: 256
 gamma: 0.99
 tau: 0.005
-learning_rate: 3e-4
+learning_rate: 7.3e-4
 use_sde: True
 use_sde_at_warmup: True
 sde_sample_freq: 64
 train_freq: [1, "episode"]
 gradient_steps: -1
-# device: "cpu"
-# stats_window_size: 10
-# device: "metal"
+stats_window_size: 10
