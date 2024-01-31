@@ -3,6 +3,7 @@ defaults:
   - env: real
   - wrappers: real_wrappers
 
-model_artifact: "model:latest"
+wandb_project: "furuta2"
+model_artifact: "model:v2"
 render: False
 nb_episodes: 1

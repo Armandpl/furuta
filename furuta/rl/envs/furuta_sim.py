@@ -20,10 +20,12 @@ class FurutaSim(FurutaBase):
         encoders_CPRs: Optional[List[float]] = None,
         velocity_filter: int = None,
         render_mode="rgb_array",
+        dt_std: float = 0.0,
     ):
 
         super().__init__(control_freq, reward, angle_limits, speed_limits, render_mode)
         self.dyn = dyn
+        self.dt_std = dt_std
 
         self.encoders_CPRs = encoders_CPRs
 
@@ -59,10 +61,11 @@ class FurutaSim(FurutaBase):
         thdd, aldd = self.dyn(self._simulation_state, a)
 
         # TODO integrate
-        self._simulation_state[ALPHA_DOT] += self.timing.dt * aldd
-        self._simulation_state[THETA_DOT] += self.timing.dt * thdd
-        self._simulation_state[ALPHA] += self.timing.dt * self._simulation_state[ALPHA_DOT]
-        self._simulation_state[THETA] += self.timing.dt * self._simulation_state[THETA_DOT]
+        dt = np.random.normal(self.timing.dt, self.dt_std)
+        self._simulation_state[ALPHA_DOT] += dt * aldd
+        self._simulation_state[THETA_DOT] += dt * thdd
+        self._simulation_state[ALPHA] += dt * self._simulation_state[ALPHA_DOT]
+        self._simulation_state[THETA] += dt * self._simulation_state[THETA_DOT]
 
         # simulate measurements
         # 1. Reduce the resolution of THETA and ALPHA based on encoders's CPRS
@@ -95,6 +98,7 @@ class FurutaSim(FurutaBase):
         options: Optional[dict] = None,
     ):
         super().reset(seed=seed)
+        self.dyn.randomize()
         self._init_state()
         obs = self.get_obs()
         self._init_vel_filt()

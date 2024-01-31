@@ -1,0 +1,6 @@
+defaults:
+  - sim
+  - override dyn: tiny_randomized
+
+dt_std: 0.002
+encoders_CPRs: [211.2, 8192.0]

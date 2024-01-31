@@ -1,9 +1,9 @@
 # @package _global_
 defaults:
-  - override /env: sim
+  - override /env: sim_randomized
   - override /wrappers: base_wrappers
 
 gym_id: "FurutaSim-v0"
-total_timesteps: 100_000
+total_timesteps: 500_000
 evaluation:
   early_stopping_reward_threshold: null

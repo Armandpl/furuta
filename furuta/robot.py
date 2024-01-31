@@ -39,38 +39,66 @@ class QubeDynamics:
         g=9.81,
         # Motor
         Rm=8.4,  # reskstance (rated voltage/stall current)
+        Rm_std=0.0,
         V=12.0,  # nominal voltage
         km=0.042,  # back-emf constant (V-s/rad) = (rated voltage / no load speed)
+        km_std=0.0,
         # Rotary Arm
         Mr=0.095,  # mass (kg)
+        Mr_std=0.0,
         Lr=0.085,  # length (m)
+        Lr_std=0.0,
         Dr=5e-6,  # viscous damping (N-m-s/rad), original: 0.0015
+        Dr_std=0.0,
         # Pendulum Link
         Mp=0.024,  # mass (kg)
+        Mp_std=0.0,
         Lp=0.129,  # length (m)
+        Lp_std=0.0,
         Dp=1e-6,  # viscous damping (N-m-s/rad), original: 0.0005
+        Dp_std=0.0,
     ):
         # Gravity
         self.g = g
 
         # Motor
-        self.Rm = Rm
+        self.Rm_mean = Rm
+        self.Rm_std = Rm_std
         self.V = V
 
-        self.km = km
+        self.km_mean = km
+        self.km_std = km_std
 
         # Rotary arm
-        self.Mr = Mr
-        self.Lr = Lr
-        self.Dr = Dr
+        self.Mr_mean = Mr
+        self.Mr_std = Mr_std
+        self.Lr_mean = Lr
+        self.Lr_std = Lr_std
+        self.Dr_mean = Dr
+        self.Dr_std = Dr_std
 
         # Pendulum link
-        self.Mp = Mp
-        self.Lp = Lp
-        self.Dp = Dp
+        self.Mp_mean = Mp
+        self.Mp_std = Mp_std
+        self.Lp_mean = Lp
+        self.Lp_std = Lp_std
+        self.Dp_mean = Dp
+        self.Dp_std = Dp_std
+
+        self.randomize()
 
         # Init constants
         self._init_const()
+
+    def randomize(self):
+        self.Rm = np.random.normal(self.Rm_mean, self.Rm_std)
+        self.km = np.random.normal(self.km_mean, self.km_std)
+        self.Mr = np.random.normal(self.Mr_mean, self.Mr_std)
+        self.Lr = np.random.normal(self.Lr_mean, self.Lr_std)
+        self.Dr = np.random.normal(self.Dr_mean, self.Dr_std)
+        self.Mp = np.random.normal(self.Mp_mean, self.Mp_std)
+        self.Lp = np.random.normal(self.Lp_mean, self.Lp_std)
+        self.Dp = np.random.normal(self.Dp_mean, self.Dp_std)
 
     def _init_const(self):
         # Moments of inertia
