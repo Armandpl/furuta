@@ -21,3 +21,7 @@ class SAC(BaseAlgoWrapper, stable_baselines3.SAC):
 
 class TQC(BaseAlgoWrapper, sb3_contrib.TQC):
     pass
+
+
+class SBXTQC(BaseAlgoWrapper, sbx.TQC):
+    pass
