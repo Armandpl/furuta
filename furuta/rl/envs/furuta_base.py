@@ -22,7 +22,7 @@ def exp_alpha_theta_reward(state):
 def exp_alpha_reward(state, exp=2):
     al = np.mod(state[ALPHA], 2 * np.pi) - np.pi  # between -pi and pi
     al_rew = np.abs(al) / np.pi  # 0 at 0, 1 at pi
-    al_rew = -np.sign(al_rew) * np.exp(np.abs(al_rew) * exp) / np.exp(exp)
+    al_rew = np.exp(al_rew * exp) / np.exp(exp)
     return al_rew
 
 
@@ -36,7 +36,6 @@ def alpha_theta_reward(state):
 
 REWARDS = {
     "alpha": alpha_reward,
-    "exp_alpha_0": lambda x: exp_alpha_reward(x, exp=0),
     "exp_alpha_1": lambda x: exp_alpha_reward(x, exp=1),
     "exp_alpha_2": lambda x: exp_alpha_reward(x, exp=2),
     "exp_alpha_4": lambda x: exp_alpha_reward(x, exp=4),
