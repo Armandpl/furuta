@@ -1,6 +1,7 @@
 _target_: furuta.rl.envs.furuta_real.FurutaReal
 control_freq: 50
-reward: "alpha"
-angle_limits: [31.4, 12]
+reward: "exp_alpha_theta"
+angle_limits: [null, 12]
 speed_limits: [50, null]
-usb_device: "/dev/ttyACM0"
+# usb_device: "/dev/ttyACM0"
+usb_device: "/dev/tty.usbmodem2201"

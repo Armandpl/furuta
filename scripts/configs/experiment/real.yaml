@@ -2,9 +2,11 @@
 defaults:
   - override /env: real
   - override /wrappers: real_wrappers
-  - override /algo: sac_real
+  - override /algo: tqc_real
 
-total_timesteps: 150_000
+total_timesteps: 100_000
+progress_bar: False
+debug: True
 n_envs: 1
 model_artifact: null
 capture_video: False
