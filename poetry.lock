@@ -3188,7 +3188,7 @@ tests = ["black", "mypy", "pytest", "pytest-cov", "pytest-env", "pytest-xdist", 
 name = "scipy"
 version = "1.11.4"
 description = "Fundamental algorithms for scientific computing in Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.9"
 files = [
@@ -4000,4 +4000,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4.0"
-content-hash = "65ec1c5e7766cee93844c1f26d00e4c4a1fe0394b8a9b9391ba983f62db5ed3c"
+content-hash = "4b1ef3c52a0da71a13656d5ac9b0bcc795608588c0d44fb2551430c0d83a424d"
