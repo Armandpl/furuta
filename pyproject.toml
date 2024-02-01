@@ -11,12 +11,14 @@ python = ">=3.9,<4.0"
 gymnasium = "^0.29.1"
 pyserial = "^3.5"
 simple-pid = "^2.0.0"
+mcap-protobuf-support = "^0.4.1"
+
+[tool.poetry.group.dev.dependencies]
 ipykernel = "^6.26.0"
 matplotlib = "3.7.3"
 pre-commit = "^3.5.0"
 stable-baselines3 = "^2.2.1"
 wandb = "^0.16.2"
-mcap-protobuf-support = "^0.4.1"
 scipy = "^1.11.4"
 pygame = "^2.5.2"
 opencv-python = "^4.9.0.80"
@@ -26,9 +28,6 @@ moviepy = "^1.0.3"
 sbx-rl = "^0.10.0"
 jax-metal = {version = "^0.0.5", platform = "darwin"}
 sb3-contrib = {git = "https://github.com/Stable-Baselines-Team/stable-baselines3-contrib"}
-
-
-[tool.poetry.group.dev.dependencies]
 pytest = "^7.4.4"
 
 [build-system]
