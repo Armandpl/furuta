@@ -21,7 +21,7 @@ class FurutaReal(FurutaBase):
     def __init__(
         self,
         control_freq=100,
-        reward="alpha_theta",
+        reward="cos_alpha",
         angle_limits=None,
         speed_limits=None,
         usb_device="/dev/ttyACM0",

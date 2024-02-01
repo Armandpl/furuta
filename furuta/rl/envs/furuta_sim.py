@@ -14,7 +14,7 @@ class FurutaSim(FurutaBase):
         self,
         dyn: QubeDynamics = QubeDynamics(),
         control_freq=50,
-        reward="alpha",
+        reward="cos_alpha",
         angle_limits=[None, None],
         speed_limits=[None, None],
         encoders_CPRs: Optional[List[float]] = None,
