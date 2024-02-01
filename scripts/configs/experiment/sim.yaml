@@ -2,8 +2,10 @@
 defaults:
   - override /env: sim
   - override /wrappers: base_wrappers
+  - override /algo: tqc_real
 
+n_envs: 1
 gym_id: "FurutaSim-v0"
-total_timesteps: 100_000
+total_timesteps: 75_000
 evaluation:
   early_stopping_reward_threshold: null

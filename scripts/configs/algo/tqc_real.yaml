@@ -1,0 +1,15 @@
+_target_: furuta.rl.algos.TQC
+policy: "MlpPolicy"
+buffer_size: 75_000
+batch_size: 256
+top_quantiles_to_drop_per_net: 2
+learning_starts: 256
+gamma: 0.99
+tau: 0.005
+learning_rate: 7.3e-4
+use_sde: True
+use_sde_at_warmup: True
+sde_sample_freq: 64
+train_freq: [1, "episode"]
+gradient_steps: -1
+stats_window_size: 10

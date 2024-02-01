@@ -52,11 +52,12 @@ def main(cfg: DictConfig):
 
     # don't paralelize if it's the real robot
     if isinstance(env.unwrapped, FurutaReal):
-        vec_env = DummyVecEnv([lambda: env])
-        if cfg.n_envs > 1:
-            logging.warning("n_envs > 1 but using real robot, ignoring n_envs")
-    else:
+        assert cfg.n_envs == 1, "n_envs > 1 but using real robot"
+
+    if cfg.n_envs > 1:
         vec_env = SubprocVecEnv([lambda: copy.deepcopy(env) for _ in range(cfg.n_envs)])
+    else:
+        vec_env = DummyVecEnv([lambda: env])
 
     # setup algo/model
     verbose = 2 if cfg.debug else 0
@@ -103,7 +104,11 @@ def main(cfg: DictConfig):
 
     try:
         logging.info("Starting to train")
-        model.learn(total_timesteps=cfg.total_timesteps, callback=eval_callback)
+        model.learn(
+            total_timesteps=cfg.total_timesteps,
+            callback=eval_callback,
+            progress_bar=cfg.progress_bar,
+        )
     except KeyboardInterrupt:
         logging.info("Interupting training")
 

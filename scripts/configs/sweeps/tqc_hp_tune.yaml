@@ -1,0 +1,20 @@
+program: train.py
+method: grid
+parameters:
+  algo.learning_rate:
+    values: [3.0e-4, 7.3e-4, 1.0e-4]
+  algo.batch_size:
+    values: [256, 1024]
+  algo.gamma:
+    values: [0.99, 0.98]
+  algo.tau:
+    values: [0.005, 0.02]
+  seed:
+    values: [1, 2, 3]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}
+  - +experiment=sim
