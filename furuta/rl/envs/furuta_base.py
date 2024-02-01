@@ -7,40 +7,36 @@ from gymnasium.spaces import Box
 from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, Timing
 
 
-def exp_alpha_theta_reward(state):
-    exp = 2
-    al = np.mod(state[ALPHA], 2 * np.pi) - np.pi  # between -pi and pi
-    al_rew = np.abs(al) / np.pi  # 0 at 0, 1 at pi
-    al_rew = 2 * al_rew - 1  # -1 at 0, 1 at pi
-    al_rew = -np.sign(al_rew) * np.exp(np.abs(al_rew) * exp) / np.exp(exp)
-    # we need the rew to be negative so that the agent doesn't learn to stay still
-    # to get the theta reward only
-
-    return al_rew + np.cos(state[THETA]) / 2
+def exp_alpha_theta_reward(state, exp=2):
+    al_rew = exp_alpha_reward(state, exp)
+    th_rew = theta_reward(state)
+    return al_rew * th_rew
 
 
 def exp_alpha_reward(state, exp=2):
-    al = np.mod(state[ALPHA], 2 * np.pi) - np.pi  # between -pi and pi
+    al = np.mod((state[ALPHA] + np.pi), 2 * np.pi) - np.pi  # between -pi and pi
     al_rew = np.abs(al) / np.pi  # 0 at 0, 1 at pi
-    al_rew = np.exp(al_rew * exp) / np.exp(exp)
+    al_rew = (np.exp(al_rew * exp) - np.exp(0)) / np.exp(exp)
     return al_rew
+
+
+def alpha_theta_reward(state):
+    return alpha_reward(state) * theta_reward(state)
 
 
 def alpha_reward(state):
     return (1 + -np.cos(state[ALPHA])) / 2
 
 
-def alpha_theta_reward(state):
-    return alpha_reward(state) + (1 + np.cos(state[THETA])) / 2
+def theta_reward(state):
+    return (1 + np.cos(state[THETA])) / 2
 
 
 REWARDS = {
-    "alpha": alpha_reward,
-    "exp_alpha_1": lambda x: exp_alpha_reward(x, exp=1),
-    "exp_alpha_2": lambda x: exp_alpha_reward(x, exp=2),
-    "exp_alpha_4": lambda x: exp_alpha_reward(x, exp=4),
-    "exp_alpha_theta": exp_alpha_theta_reward,
-    "alpha_theta": alpha_theta_reward,
+    "cos_alpha": alpha_theta_reward,
+    "exp_alpha_2": lambda x: exp_alpha_theta_reward(x, exp=2),
+    "exp_alpha_4": lambda x: exp_alpha_theta_reward(x, exp=4),
+    "exp_alpha_6": lambda x: exp_alpha_theta_reward(x, exp=6),
 }
 
 

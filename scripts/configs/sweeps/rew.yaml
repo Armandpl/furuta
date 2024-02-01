@@ -2,7 +2,7 @@ program: train.py
 method: grid
 parameters:
   env.reward:
-    values: ["alpha", "exp_alpha_1", "exp_alpha_2", "exp_alpha_4"]
+    values: ["cos_alpha", "exp_alpha_2", "exp_alpha_4", "exp_alpha_6"]
   seed:
     values: [1, 2, 3]
 
