@@ -22,9 +22,6 @@ const uint8_t MOTOR_ENC_B = 10;
 const uint8_t PENDULUM_ENC_A = 7;
 const uint8_t PENDULUM_ENC_B = 8;
 
-const float MOTOR_ENCODER_CPR = 211.2;
-const float PENDULUM_ENCODER_CPR = 8192;
-
 Encoder motorEncoder(MOTOR_ENC_A, MOTOR_ENC_B);
 Encoder pendulumEncoder(PENDULUM_ENC_A, PENDULUM_ENC_B);
 
@@ -112,21 +109,13 @@ void loop() {
       // process the motor command
       processMotorCommand(motor_command, direction);
 
-      // read the motor and pendulum encoder values
-      // convert to angles in radians
-      // and send them back as two floats
+      int32_t motorEncoderValue = motorEncoder.read();
+      int32_t pendulumEncoderValue = pendulumEncoder.read();
+      unsigned long timestamp = micros();
 
-      // read the motor and pendulum encoder values
-      long motorEncoderValue = motorEncoder.read();
-      long pendulumEncoderValue = pendulumEncoder.read();
-
-      // convert to angles in radians
-      float motorAngle = (2 * PI * motorEncoderValue) / MOTOR_ENCODER_CPR;
-      float pendulumAngle = (2 * PI * pendulumEncoderValue) / PENDULUM_ENCODER_CPR;
-
-      // send them back as two floats
-      Serial.write((uint8_t*)&motorAngle, sizeof(motorAngle));
-      Serial.write((uint8_t*)&pendulumAngle, sizeof(pendulumAngle));
+      Serial.write((uint8_t*)&motorEncoderValue, sizeof(motorEncoderValue));
+      Serial.write((uint8_t*)&pendulumEncoderValue, sizeof(pendulumEncoderValue));
+      Serial.write((uint8_t*)&timestamp, sizeof(timestamp));
     }
   }
 }

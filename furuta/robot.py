@@ -7,6 +7,10 @@ import serial
 class Robot:
     def __init__(self, device="dev/ttyACM0", baudrate=921600):
         self.ser = serial.Serial(device, baudrate)
+        self.motor_encoder_cpr = 400
+        self.pendulum_encoder_cpr = 5120 * 4
+        # self.motor_encoder_cpr = 211.2
+        # self.pendulum_encoder_cpr = 8192
 
     def step(self, motor_command: float):
         direction = motor_command < 0
@@ -16,9 +20,12 @@ class Robot:
         tx += b"\x01"  # command type = STEP = 0x01
         tx += struct.pack("<?H", direction, int_motor_command)
         self.ser.write(tx)
-        resp = self.ser.read(8)
-        motor_angle, pendulum_angle = struct.unpack("<ff", resp)
-        return motor_angle, pendulum_angle
+        resp = self.ser.read(12)
+        raw_motor_angle, raw_pendulum_angle, raw_timestamp = struct.unpack("<iiL", resp)
+        motor_angle = 2 * np.pi * raw_motor_angle / self.motor_encoder_cpr
+        pendulum_angle = 2 * np.pi * raw_pendulum_angle / self.pendulum_encoder_cpr
+        timestamp = raw_timestamp / 1e6
+        return motor_angle, pendulum_angle, timestamp
 
     def reset_encoders(self):
         tx = b"\x10\x02"  # start sequence
