@@ -23,7 +23,7 @@ class Robot:
         resp = self.ser.read(12)
         raw_motor_angle, raw_pendulum_angle, raw_timestamp = struct.unpack("<iiL", resp)
         motor_angle = 2 * np.pi * raw_motor_angle / self.motor_encoder_cpr
-        pendulum_angle = 2 * np.pi * raw_pendulum_angle / self.pendulum_encoder_cpr + np.pi
+        pendulum_angle = 2 * np.pi * raw_pendulum_angle / self.pendulum_encoder_cpr
         timestamp = raw_timestamp / 1e6
         return motor_angle, pendulum_angle, timestamp
 
