@@ -130,7 +130,7 @@ class MCAPLogger(gym.Wrapper):
 
         # reset sim time
         self.sim_time = 0
-        return self.env.reset(seed, options)
+        return self.env.reset(seed=seed, options=options)
 
     def close(self):
         self.close_mcap_writer()
@@ -185,7 +185,7 @@ class ControlFrequency(gym.Wrapper):
         options: Optional[dict] = None,
     ):
         self.last = None
-        return self.env.reset(seed, options)
+        return self.env.reset(seed=seed, options=options)
 
 
 class HistoryWrapper(gym.Wrapper):
@@ -244,7 +244,10 @@ class HistoryWrapper(gym.Wrapper):
         self.history = self._make_history()
         self.history.pop(0)
         obs = np.concatenate(
-            [self.env.reset(seed, options)[0], np.zeros_like(self.env.action_space.low)]
+            [
+                self.env.reset(seed=seed, options=options)[0],
+                np.zeros_like(self.env.action_space.low),
+            ]
         )
         self.history.append(obs)
         return np.array(self.history, dtype=np.float32).flatten(), {}
