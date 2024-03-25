@@ -21,11 +21,13 @@ class FurutaSim(FurutaBase):
         velocity_filter: int = None,
         render_mode="rgb_array",
         dt_std: float = 0.0,
+        integration_dt: float = 1 / 500,
     ):
 
         super().__init__(control_freq, reward, angle_limits, speed_limits, render_mode)
         self.dyn = dyn
         self.dt_std = dt_std
+        self.integration_dt = integration_dt
 
         self.encoders_CPRs = encoders_CPRs
 
@@ -57,15 +59,22 @@ class FurutaSim(FurutaBase):
         # ok so we simulate two things: the systems's state
         # and the way we would measure it
 
-        # update the simulation state
-        thdd, aldd = self.dyn(self._simulation_state, a)
-
         # TODO integrate
-        dt = np.random.normal(self.timing.dt, self.dt_std)
-        self._simulation_state[ALPHA_DOT] += dt * aldd
-        self._simulation_state[THETA_DOT] += dt * thdd
-        self._simulation_state[ALPHA] += dt * self._simulation_state[ALPHA_DOT]
-        self._simulation_state[THETA] += dt * self._simulation_state[THETA_DOT]
+        # dt = np.random.normal(self.timing.dt, self.dt_std)
+
+        integration_steps = int(self.timing.dt / self.integration_dt)
+        for _ in range(integration_steps):
+            # update the simulation state
+            thdd, aldd = self.dyn(self._simulation_state, a)
+
+            self._simulation_state[ALPHA_DOT] += self.integration_dt * aldd
+            self._simulation_state[THETA_DOT] += self.integration_dt * thdd
+            self._simulation_state[ALPHA] += (
+                self.integration_dt * self._simulation_state[ALPHA_DOT]
+            )
+            self._simulation_state[THETA] += (
+                self.integration_dt * self._simulation_state[THETA_DOT]
+            )
 
         # simulate measurements
         # 1. Reduce the resolution of THETA and ALPHA based on encoders's CPRS
