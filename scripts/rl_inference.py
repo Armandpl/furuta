@@ -45,7 +45,7 @@ def main(cfg: DictConfig):
         ep_return = 0
         obs = env.reset()
         while True:
-            action, _ = model.predict(obs, deterministic=False)
+            action, _ = model.predict(obs, deterministic=True)
             obs, reward, done, _ = env.step(action)
             ep_return += reward
             if cfg.render:
