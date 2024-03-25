@@ -106,7 +106,7 @@ class FurutaSim(FurutaBase):
         seed: Optional[int] = None,
         options: Optional[dict] = None,
     ):
-        super().reset(seed=seed)
+        super().reset(seed=seed, options=options)
         self.dyn.randomize()
         self._init_state()
         obs = self.get_obs()
