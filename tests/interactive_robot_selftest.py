@@ -4,8 +4,6 @@ import numpy as np
 
 from furuta.robot import Robot
 
-# from scripts.control import has_pendulum_fallen
-
 # not using pytest here bc couldn't get user input during test session
 
 
@@ -49,19 +47,17 @@ def test_motor_direction(device):
     return ""
 
 
-# def test_has_pendulum_fallen(device):
-#     robot = Robot(device)
-#     robot.reset_encoders()
+def test_has_pendulum_fallen(device):
+    robot = Robot(device)
+    robot.reset_encoders()
 
-#     input("Lift the pendulum and press enter, then let the pendulum fall")
-#     time.sleep(3.0)
+    input("Lift the pendulum and press enter, then let the pendulum fall")
+    time.sleep(3.0)
 
-#     _, pendulum_angle, _ = robot.step(0.0)
-#     robot.close()
-#     assert has_pendulum_fallen(
-#         pendulum_angle, setpoint=np.pi, angle_threshold=np.deg2rad(60.0)
-#     ), "The fall was not detcected"
-#     return ""
+    _, pendulum_angle, _ = robot.step(0.0)
+    robot.close()
+    assert abs(pendulum_angle) < np.deg2rad(15.0), "Pendulum angle too high"
+    return f"pendulum angle OK: {pendulum_angle}"
 
 
 def print_report(results):
@@ -87,7 +83,7 @@ if __name__ == "__main__":
     if device == "":
         device = "/dev/ttyACM0"
 
-    tests = [test_control_freq, test_motor_stop, test_motor_direction]
+    tests = [test_control_freq, test_motor_stop, test_motor_direction, test_has_pendulum_fallen]
 
     results = run_tests(tests, device)
     print()
