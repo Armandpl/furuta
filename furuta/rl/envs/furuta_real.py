@@ -20,11 +20,11 @@ ALPHA_THRESH = np.cos(
 class FurutaReal(FurutaBase):
     def __init__(
         self,
+        robot: Robot,
         control_freq=100,
         reward="cos_alpha",
         angle_limits=None,
         speed_limits=None,
-        robot: Robot = Robot(),
         motor_stop_pid=[0.04, 0.0, 0.001],
     ):
         super().__init__(control_freq, reward, angle_limits, speed_limits)
@@ -55,18 +55,18 @@ class FurutaReal(FurutaBase):
 
         if self._state is not None:  # if not first reset
             logging.debug("Stopping motor")
-            motor_pid = PID(
-                self.motor_stop_pid[0],
-                self.motor_stop_pid[1],
-                self.motor_stop_pid[2],
-                setpoint=0.0,
-                output_limits=(-1, 1),
-            )
+            # motor_pid = PID(
+            #     self.motor_stop_pid[0],
+            #     self.motor_stop_pid[1],
+            #     self.motor_stop_pid[2],
+            #     setpoint=0.0,
+            #     output_limits=(-1, 1),
+            # )
 
             reset_time = 0
             while abs(self._state[THETA_DOT]) > 0.5 and reset_time < MAX_MOTOR_RESET_TIME:
-                act = motor_pid(self._state[THETA_DOT])
-                self._update_state(act)
+                # act = motor_pid(self._state[THETA_DOT])
+                # self._update_state(act)
                 reset_time += self.timing.dt
                 sleep(self.timing.dt)
 
