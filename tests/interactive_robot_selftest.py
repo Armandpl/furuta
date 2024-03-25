@@ -41,7 +41,7 @@ def test_motor_direction(device):
     robot.step(0.35)
     time.sleep(0.5)  # wait for 500ms
 
-    user_response = input("Was the motor spinning clockwise? (yes/no): ")
+    user_response = input("Was the motor spinning counter-clockwise? (yes/no): ")
     robot.close()
     assert user_response.lower() == "yes", "Motor spinning backwards, swap motor wires."
     return ""
