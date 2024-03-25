@@ -37,7 +37,7 @@ class FurutaReal(FurutaBase):
         self.vel_filt = VelocityFilter(2, dt=self.timing.dt)
 
     def _update_state(self, action):
-        motor_angle, pendulum_angle = self.robot.step(action)
+        motor_angle, pendulum_angle, _ = self.robot.step(action)
 
         # motor_angle: theta, pendulum angle: alpha
         pos = np.array([motor_angle, pendulum_angle], dtype=np.float32)
