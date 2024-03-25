@@ -43,7 +43,6 @@ REWARDS = {
 class FurutaBase(gym.Env):
     metadata = {
         "render_modes": ["rgb_array", "human"],
-        "render_fps": 50,  # TODO should this be the same as the control freq/sim dt?
     }
 
     def __init__(
@@ -55,6 +54,7 @@ class FurutaBase(gym.Env):
         render_mode="rgb_array",
     ):
         self.render_mode = render_mode
+        self.metadata["render_fps"] = control_freq
 
         self.timing = Timing(control_freq)
         self._state = None
