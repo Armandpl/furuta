@@ -1,5 +1,5 @@
 _target_: furuta.robot.Robot
-usb_device: "/dev/ttyACM0"
-# usb_device: "/dev/tty.usbmodem2201"
+device: "/dev/ttyACM0"
+# device: "/dev/tty.usbmodem2201"
 motor_encoder_cpr: 464.64
 pendulum_encoder_cpr: 8192
