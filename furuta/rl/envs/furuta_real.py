@@ -20,24 +20,24 @@ ALPHA_THRESH = np.cos(
 class FurutaReal(FurutaBase):
     def __init__(
         self,
+        robot: Robot,
         control_freq=100,
         reward="cos_alpha",
         angle_limits=None,
         speed_limits=None,
-        usb_device="/dev/ttyACM0",
         motor_stop_pid=[0.04, 0.0, 0.001],
     ):
         super().__init__(control_freq, reward, angle_limits, speed_limits)
         self.motor_stop_pid = motor_stop_pid
 
-        self.robot = Robot(usb_device)
+        self.robot = robot
         self._state = None
 
     def _init_vel_filt(self):
         self.vel_filt = VelocityFilter(2, dt=self.timing.dt)
 
     def _update_state(self, action):
-        motor_angle, pendulum_angle = self.robot.step(action)
+        motor_angle, pendulum_angle, _ = self.robot.step(action)
 
         # motor_angle: theta, pendulum angle: alpha
         pos = np.array([motor_angle, pendulum_angle], dtype=np.float32)
@@ -55,18 +55,18 @@ class FurutaReal(FurutaBase):
 
         if self._state is not None:  # if not first reset
             logging.debug("Stopping motor")
-            motor_pid = PID(
-                self.motor_stop_pid[0],
-                self.motor_stop_pid[1],
-                self.motor_stop_pid[2],
-                setpoint=0.0,
-                output_limits=(-1, 1),
-            )
+            # motor_pid = PID(
+            #     self.motor_stop_pid[0],
+            #     self.motor_stop_pid[1],
+            #     self.motor_stop_pid[2],
+            #     setpoint=0.0,
+            #     output_limits=(-1, 1),
+            # )
 
             reset_time = 0
             while abs(self._state[THETA_DOT]) > 0.5 and reset_time < MAX_MOTOR_RESET_TIME:
-                act = motor_pid(self._state[THETA_DOT])
-                self._update_state(act)
+                # act = motor_pid(self._state[THETA_DOT])
+                # self._update_state(act)
                 reset_time += self.timing.dt
                 sleep(self.timing.dt)
 

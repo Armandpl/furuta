@@ -4,6 +4,7 @@ _target_: furuta.robot.QubeDynamics
 Rm: 6.66 # reskstance (rated voltage/stall current)
 Rm_std: 1.0
 V: 12.0 # nominal voltage
+reduction_ratio: 9.68
 km: 0.063 # back-emf constant (V-s/rad) = (rated voltage / no load speed)
 km_std: 0.05
 # Rotary Arm

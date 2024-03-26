@@ -1,7 +1,9 @@
+defaults:
+  - _self_
+  - robot: tiny_robot
+
 _target_: furuta.rl.envs.furuta_real.FurutaReal
 control_freq: 50
-reward: "exp_alpha_theta"
+reward: "cos_alpha"
 angle_limits: [null, 12]
 speed_limits: [50, null]
-# usb_device: "/dev/ttyACM0"
-usb_device: "/dev/tty.usbmodem2201"

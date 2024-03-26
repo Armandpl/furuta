@@ -130,7 +130,7 @@ class MCAPLogger(gym.Wrapper):
 
         # reset sim time
         self.sim_time = 0
-        return self.env.reset()
+        return self.env.reset(seed=seed, options=options)
 
     def close(self):
         self.close_mcap_writer()
@@ -185,7 +185,7 @@ class ControlFrequency(gym.Wrapper):
         options: Optional[dict] = None,
     ):
         self.last = None
-        return self.env.reset()
+        return self.env.reset(seed=seed, options=options)
 
 
 class HistoryWrapper(gym.Wrapper):
@@ -205,7 +205,7 @@ class HistoryWrapper(gym.Wrapper):
         obs_low = np.tile(self.step_low, (self.steps, 1))
         obs_high = np.tile(self.step_high, (self.steps, 1))
 
-        self.observation_space = Box(low=obs_low, high=obs_high)
+        self.observation_space = Box(low=obs_low.flatten(), high=obs_high.flatten())
 
         self.history = self._make_history()
 
@@ -227,14 +227,14 @@ class HistoryWrapper(gym.Wrapper):
 
         obs = np.concatenate([obs, action])
         self.history.append(obs)
-        obs = np.array(self.history)
+        obs = np.array(self.history, dtype=np.float32)
 
         if self.use_continuity_cost:
             continuity_cost = self._continuity_cost(obs)
             reward -= continuity_cost
             info["continuity_cost"] = continuity_cost
 
-        return obs, reward, terminated, truncated, info
+        return obs.flatten(), reward, terminated, truncated, info
 
     def reset(
         self,
@@ -243,6 +243,11 @@ class HistoryWrapper(gym.Wrapper):
     ):
         self.history = self._make_history()
         self.history.pop(0)
-        obs = np.concatenate([self.env.reset()[0], np.zeros_like(self.env.action_space.low)])
+        obs = np.concatenate(
+            [
+                self.env.reset(seed=seed, options=options)[0],
+                np.zeros_like(self.env.action_space.low),
+            ]
+        )
         self.history.append(obs)
-        return np.array(self.history), {}
+        return np.array(self.history, dtype=np.float32).flatten(), {}

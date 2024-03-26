@@ -43,7 +43,6 @@ REWARDS = {
 class FurutaBase(gym.Env):
     metadata = {
         "render_modes": ["rgb_array", "human"],
-        "render_fps": 50,  # TODO should this be the same as the control freq/sim dt?
     }
 
     def __init__(
@@ -55,6 +54,7 @@ class FurutaBase(gym.Env):
         render_mode="rgb_array",
     ):
         self.render_mode = render_mode
+        self.metadata["render_fps"] = control_freq
 
         self.timing = Timing(control_freq)
         self._state = None
@@ -123,10 +123,6 @@ class FurutaBase(gym.Env):
         self._update_state(action[0])
 
         terminated = not self.state_space.contains(self._state)
-
-        # if terminated:
-        #     rwd -= self.reward.oob_penalty
-
         truncated = False
 
         return obs, rwd, terminated, truncated, {}
@@ -154,7 +150,7 @@ class FurutaBase(gym.Env):
         seed: Optional[int] = None,
         options: Optional[dict] = None,
     ):
-        super().reset(seed=seed)
+        super().reset(seed=seed, options=options)
 
     def _update_state(self, a):
         raise NotImplementedError
@@ -201,9 +197,9 @@ class FurutaBase(gym.Env):
         l, r, t, b = -cartwidth / 2, cartwidth / 2, cartheight / 2, -cartheight / 2
         axleoffset = cartheight / 4.0
 
-        # make sure theta stays between -pi and pi
-        theta = (x[THETA] % (2 * np.pi)) - np.pi
-        cartx = theta * scale + self.screen_width / 2.0  # MIDDLE OF CART
+        # make sure theta stays between 0 and 2 * pi
+        theta = (x[THETA] + np.pi) % (2 * np.pi)
+        cartx = theta * scale
         carty = 100  # TOP OF CART
         cart_coords = [(l, b), (l, t), (r, t), (r, b)]
         cart_coords = [(c[0] + cartx, c[1] + carty) for c in cart_coords]

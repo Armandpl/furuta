@@ -12,7 +12,7 @@ n_envs: 12
 
 # eval & early stopping
 evaluation:
-  early_stopping_reward_threshold: 930 # use null for no early stopping
+  early_stopping_reward_threshold: null # use null for no early stopping
   deterministic: True
   n_eval_episodes: 10
   eval_freq: 5_000 # set to null to disable evaluation and early stopping
@@ -33,5 +33,5 @@ replay_buffer_artifact: null
 model_artifact: null
 
 # logging
-save_model: False
+save_model: True
 save_replay_buffer: False
