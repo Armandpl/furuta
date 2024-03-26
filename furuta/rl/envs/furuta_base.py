@@ -123,10 +123,6 @@ class FurutaBase(gym.Env):
         self._update_state(action[0])
 
         terminated = not self.state_space.contains(self._state)
-
-        # if terminated:
-        #     rwd -= self.reward.oob_penalty
-
         truncated = False
 
         return obs, rwd, terminated, truncated, {}
@@ -201,9 +197,9 @@ class FurutaBase(gym.Env):
         l, r, t, b = -cartwidth / 2, cartwidth / 2, cartheight / 2, -cartheight / 2
         axleoffset = cartheight / 4.0
 
-        # make sure theta stays between -pi and pi
-        theta = (x[THETA] % (2 * np.pi)) - np.pi
-        cartx = theta * scale + self.screen_width / 2.0  # MIDDLE OF CART
+        # make sure theta stays between 0 and 2 * pi
+        theta = (x[THETA] + np.pi) % (2 * np.pi)
+        cartx = theta * scale
         carty = 100  # TOP OF CART
         cart_coords = [(l, b), (l, t), (r, t), (r, b)]
         cart_coords = [(c[0] + cartx, c[1] + carty) for c in cart_coords]
