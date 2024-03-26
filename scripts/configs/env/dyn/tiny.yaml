@@ -1,15 +1,18 @@
 _target_: furuta.robot.QubeDynamics
 # use this file to store the sim params for the tiny version of the robot
 # Motor
-Rm: 6.66 # reskstance (rated voltage/stall current)
+Rm: 6.66 # resistance (rated voltage/stall current)
 V: 12.0 # nominal voltage
 reduction_ratio: 9.68
-km: 0.063 # back-emf constant (V-s/rad) = (rated voltage / no load speed)
+stall_torque: 0.16677 # N/m
+km: 0.01397458038 # back-emf constant (V-s/rad) = (rated voltage / no load speed)
 # Rotary Arm
 Mr: 0.035 # mass (kg)
-Lr: 0.114 # length (m)
+# Lr: 0.114 # length (m)
+Lr: 0.057 # length (m)
 Dr: 5e-6 # viscous damping (N-m-s/rad), original: 0.0015
 # Pendulum Link
 Mp: 0.016 # mass (kg)
-Lp: 0.08 # length (m)
+# Lp: 0.08 # length (m)
+Lp: 0.16 # length (m) *2 bc they use it as the center of mass of the pendulum link
 Dp: 1e-6 # viscous damping (N-m-s/rad), original: 0.0005

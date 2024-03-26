@@ -1,12 +1,12 @@
 defaults:
   - sac
 
-learning_starts: 1
+learning_starts: 1024
 use_sde: True
 sde_sample_freq: 64
 use_sde_at_warmup: True
 # ent_coef: 0.0 # "auto_0.05"
 train_freq: [1, "episode"]
 policy_kwargs:
-  use_expln: True
+  # use_expln: True
   # clip_mean: 0.5
