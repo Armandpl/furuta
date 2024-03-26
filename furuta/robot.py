@@ -186,6 +186,7 @@ class QubeDynamics:
         Rm_std=0.0,
         V=12.0,  # nominal voltage
         reduction_ratio=1.0,
+        stall_torque=0.16,  # N/m
         km=0.042,  # back-emf constant (V-s/rad) = (rated voltage / no load speed)
         km_std=0.0,
         # Rotary Arm
@@ -211,6 +212,7 @@ class QubeDynamics:
         self.Rm_std = Rm_std
         self.V = V
         self.reduction_ratio = reduction_ratio
+        self.stall_torque = stall_torque
 
         self.km_mean = km
         self.km_std = km_std
@@ -295,6 +297,7 @@ class QubeDynamics:
             * (voltage - self.km * thd * self.reduction_ratio)
             / self.Rm
         )
+        trq = np.clip(trq, -self.stall_torque, self.stall_torque)
         c0 = self._c[1] * sin_2al * thd * ald - self._c[2] * sin_al * ald * ald
         c1 = -0.5 * self._c[1] * sin_2al * thd * thd + self._c[4] * sin_al
         x = trq - self.Dr * thd - c0
