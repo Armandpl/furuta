@@ -21,9 +21,10 @@ jobs:
         with:
           python-version: "3.9"
       - name: flake8 Lint
-        uses: py-actions/flake8@v1
+        uses: py-actions/flake8@v2
         with:
-          extend-ignore: "E203,E402,E501,F401,F841"
+          # custom ignores start at w504, before are the default ones
+          ignore: "E121,E123,E126,E226,E24,E704,W503,W504,E203,E402,E501,F401,F841"
           exclude: "logs/*,data/*,furuta/logging/protobuf/*"
 
   test:
