@@ -2,7 +2,7 @@
 defaults:
   - override /env: real
   - override /wrappers: real_wrappers
-  - override /algo: tqc_real
+  - override /algo: sac_real
 
 total_timesteps: 100_000
 progress_bar: False

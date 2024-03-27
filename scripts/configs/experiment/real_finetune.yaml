@@ -4,7 +4,7 @@ defaults:
   - override /wrappers: real_wrappers
   - override /algo: sac_real
 
-total_timesteps: 150_000
+total_timesteps: 100_000
 n_envs: 1
-model_artifact: "model:v7"
+model_artifact: "model:v61"
 capture_video: False
