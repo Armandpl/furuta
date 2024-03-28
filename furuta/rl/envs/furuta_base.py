@@ -29,8 +29,9 @@ def alpha_reward(state):
 
 
 def theta_reward(state):
-    return float(np.cos(state[ALPHA]) > 0)
     # return (1 + np.cos(state[THETA])) / 2
+    theta_rew = (np.cos(state[THETA] + np.pi) + 1) / 2
+    return 1 - theta_rew**2
 
 
 REWARDS = {
