@@ -7,14 +7,9 @@ const uint8_t RESET = 0;
 const uint8_t STEP = 1;
 
 // Pin definitions
-const uint8_t MOTOR_DRIVER = 0; // 0 = MC33926
-const uint8_t MOTOR_IN1 = 1; // which way to go
-const uint8_t MOTOR_IN2 = 2;
-const uint8_t MOTOR_D2 = A3; // how fast to go
-
-// uint8_t MOTOR_DRIVER = 1 // 1 = TB9051-FTG
-uint8_t PWM1 = 0;
-uint8_t PWM2 = 0;
+// motor driver
+uint8_t PWM1 = A1;
+uint8_t PWM2 = A2;
 
 const uint8_t MOTOR_ENC_A = 9;
 const uint8_t MOTOR_ENC_B = 10;
@@ -30,41 +25,21 @@ const unsigned long COMMAND_TIMEOUT = 500; // ms
 
 
 void processMotorCommand(uint16_t motor_command, bool direction) {
-  if (MOTOR_DRIVER == 0) { // MC33926
-    if (direction) {
-      digitalWrite(MOTOR_IN1, LOW);
-      digitalWrite(MOTOR_IN2, HIGH);
-    }
-    else {
-      digitalWrite(MOTOR_IN1, HIGH);
-      digitalWrite(MOTOR_IN2, LOW);
-    }
-    analogWrite(MOTOR_D2, motor_command);
+  if (direction) {
+    analogWrite(PWM1, motor_command);
+    analogWrite(PWM2, 0);
   }
-  else if (MOTOR_DRIVER == 1) { // TB9051-FTG
-    if (direction) {
-      analogWrite(PWM1, motor_command);
-      analogWrite(PWM2, 0);
-    }
-    else {
-      analogWrite(PWM1, 0);
-      analogWrite(PWM2, motor_command);
-    }
+  else {
+    analogWrite(PWM1, 0);
+    analogWrite(PWM2, motor_command);
   }
 }
 
 
 void setup() {
   // setup motor pins
-  if (MOTOR_DRIVER == 0) { // MC33926
-    pinMode(MOTOR_IN1, OUTPUT);
-    pinMode(MOTOR_IN2, OUTPUT);
-    pinMode(MOTOR_D2, OUTPUT);
-  }
-  else if (MOTOR_DRIVER == 1) { // TB9051-FTG
-    pinMode(PWM1, OUTPUT);
-    pinMode(PWM2, OUTPUT);
-  }
+  pinMode(PWM1, OUTPUT);
+  pinMode(PWM2, OUTPUT);
   analogWriteResolution(16);
 
   // setup serial
