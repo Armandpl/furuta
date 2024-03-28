@@ -29,12 +29,14 @@ def alpha_reward(state):
 
 
 def theta_reward(state):
-    return (1 + np.cos(state[THETA])) / 2
+    return float(np.cos(state[ALPHA]) > 0)
+    # return (1 + np.cos(state[THETA])) / 2
 
 
 REWARDS = {
     "cos_alpha": alpha_theta_reward,
     "exp_alpha_2": lambda x: exp_alpha_theta_reward(x, exp=2),
+    "exp_alpha_3": lambda x: exp_alpha_theta_reward(x, exp=3),
     "exp_alpha_4": lambda x: exp_alpha_theta_reward(x, exp=4),
     "exp_alpha_6": lambda x: exp_alpha_theta_reward(x, exp=6),
 }
