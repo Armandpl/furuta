@@ -425,6 +425,33 @@ files = [
 cmeel = "*"
 
 [[package]]
+name = "cmeel-mim-solvers"
+version = "0.0.4"
+description = "A fast and flexible implementation of Rigid Body Dynamics algorithms and their analytical derivatives"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "cmeel_mim_solvers-0.0.4-0-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:0a4226f15a8b140c86ee237081e97e782b3c7acd1852f95a9a4caec359f252e2"},
+    {file = "cmeel_mim_solvers-0.0.4-0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:1191612b8166ea9e8b2acb1559d516b4161fc795e4c12fad6ef67277d2ee6d10"},
+    {file = "cmeel_mim_solvers-0.0.4-0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:2162293cecdf44c60cccadb49d89793df0c5eebaba7735d61870ccc2e955a440"},
+    {file = "cmeel_mim_solvers-0.0.4-0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:bba3d3dcdc796b880b91f9f93b5b53be0d8883c88ab2852a3cda4b7595cb59cd"},
+    {file = "cmeel_mim_solvers-0.0.4-0-cp38-cp38-manylinux_2_28_aarch64.whl", hash = "sha256:771341fe09c591797d0994151ef923875cc5fde4db4ee2a372ab65ce4139ee8b"},
+    {file = "cmeel_mim_solvers-0.0.4-0-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:ff83164819cba90368660230d6249ff44039dc7b9cd43cc7f583eb0988cf0b8b"},
+    {file = "cmeel_mim_solvers-0.0.4-0-cp39-cp39-manylinux_2_28_aarch64.whl", hash = "sha256:a54cd9ef5b9e46f0c4767c614d4b2423830252a84d0b78f071a6b0e25e092371"},
+    {file = "cmeel_mim_solvers-0.0.4-0-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:c487c9a80903805e5729900c90ae2655c76c9ce50dcf2664457a454be8ebadcc"},
+    {file = "cmeel_mim_solvers-0.0.4.tar.gz", hash = "sha256:82e52961f2ca8d6e34f092bcf1004b95279c2f9092daa7767d7ea5cb8eeefa5a"},
+]
+
+[package.dependencies]
+cmeel = "*"
+cmeel-boost = ">=1.83.0,<1.84.0"
+crocoddyl = "*"
+proxsuite = "*"
+
+[package.extras]
+build = ["crocoddyl[build]", "proxsuite[build]"]
+
+[[package]]
 name = "cmeel-octomap"
 version = "1.9.8.2"
 description = "cmeel distribution for OctoMap, An Efficient Probabilistic 3D Mapping Framework Based on Octrees"
@@ -3041,6 +3068,41 @@ files = [
 ]
 
 [[package]]
+name = "proxsuite"
+version = "0.6.3"
+description = "Quadratic Programming Solver for Robotics and beyond."
+optional = false
+python-versions = ">= 3.7"
+files = [
+    {file = "proxsuite-0.6.3-0-cp310-cp310-manylinux_2_17_x86_64.whl", hash = "sha256:f8463a4a56675a55bc6d08f555929aac1b0994b2b69e6a3acfa605c9d4de0ceb"},
+    {file = "proxsuite-0.6.3-0-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:0f1aefd2e2f40add89a34d9c78ee344e24a20f652e6f0f81711d52355cc894c0"},
+    {file = "proxsuite-0.6.3-0-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:e606c993d21380255c10151bb68f6843aac9818e84b9250f07cf457e3f4989b6"},
+    {file = "proxsuite-0.6.3-0-cp311-cp311-manylinux_2_17_x86_64.whl", hash = "sha256:92cd299adb0b57730d3dc33035f9bc187ee644c750fb1817e1e6a0bd1dcc8e01"},
+    {file = "proxsuite-0.6.3-0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:00a52b44fc01fa7d24b5e3eeee3903eca143139e823830189fd14c337a2a4521"},
+    {file = "proxsuite-0.6.3-0-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:26cb60235d2ffed33dca33a0ae1e89dd5e49fb2fa5ea376bc16be84fd0ae57dd"},
+    {file = "proxsuite-0.6.3-0-cp37-cp37m-manylinux_2_17_x86_64.whl", hash = "sha256:c8a733cd73efa4a9bd2998c151f47fc34d1085c533b1134ccb8f66f89e2b3417"},
+    {file = "proxsuite-0.6.3-0-cp37-cp37m-manylinux_2_28_aarch64.whl", hash = "sha256:c2ac850df6fdd8469b98d63d02fca307bcc583f7bf344820aef56c81fd8b78b6"},
+    {file = "proxsuite-0.6.3-0-cp37-cp37m-musllinux_1_1_x86_64.whl", hash = "sha256:7cc1b369ceeb1c468b542b673a2b01c049bb01596dfe692beca4bff77f174369"},
+    {file = "proxsuite-0.6.3-0-cp38-cp38-manylinux_2_17_x86_64.whl", hash = "sha256:2a5de71bd4d6f355e2820b282d659ca15a2475aa60307a6bab0edc0c472bd911"},
+    {file = "proxsuite-0.6.3-0-cp38-cp38-manylinux_2_28_aarch64.whl", hash = "sha256:1ac20dc1ab040fcc246f0252871d7620e057b56c4fd7d553ecc8758982a126b8"},
+    {file = "proxsuite-0.6.3-0-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:ea50c9ae481a61d06964691e4999cc59a57ae341b9d62a31dce04a76c87ead89"},
+    {file = "proxsuite-0.6.3-0-cp39-cp39-manylinux_2_17_x86_64.whl", hash = "sha256:c825492fa383d1580d1513d59fb977dcbd3fea9c17bd48b902925fe0136a3a56"},
+    {file = "proxsuite-0.6.3-0-cp39-cp39-manylinux_2_28_aarch64.whl", hash = "sha256:2f9000c97617b1ff23c363af097d3ab4b5fd284277fb3e71937c4ab71f32fc90"},
+    {file = "proxsuite-0.6.3-0-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:b7b5909be282458e1d6d66645abec6aac4d6403f282a03ac08131034a4a2d823"},
+    {file = "proxsuite-0.6.3-0-pp37-pypy37_pp73-manylinux_2_17_x86_64.whl", hash = "sha256:8e0dc082d61c31632d4f197e8f46770f1dac5651b0054079c39eddb9594873f2"},
+    {file = "proxsuite-0.6.3-0-pp38-pypy38_pp73-manylinux_2_17_x86_64.whl", hash = "sha256:e653507e06faf57a0efaf9ef7577dc887e976dd431fa658d69606593840b84de"},
+    {file = "proxsuite-0.6.3-0-pp39-pypy39_pp73-manylinux_2_17_x86_64.whl", hash = "sha256:35f791663ce42e9f806f08ba7c3db4ed26fa70ee0ce6cc104aaf7f74ff8611b0"},
+]
+
+[package.dependencies]
+cmeel = "*"
+numpy = "*"
+scipy = "*"
+
+[package.extras]
+build = ["cmeel-eigen", "cmeel-simde"]
+
+[[package]]
 name = "psutil"
 version = "5.9.6"
 description = "Cross-platform lib for process and system monitoring in Python."
@@ -4369,4 +4431,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4.0"
-content-hash = "7c1e2e97c3e337d280a3477c27641ca745469acfeed5918e1bfac47cc35a53e3"
+content-hash = "44bb32ebf3aef33420dbac099afb477777bc0bcc8802008fd4e9dad5f6fb9a87"

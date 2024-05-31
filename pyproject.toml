@@ -17,6 +17,7 @@ pygame = "^2.5.2"
 pin = "^2.7.0"
 crocoddyl = "^2.0.2"
 panda3d-viewer = "^0.4.1"
+cmeel-mim-solvers = "^0.0.4"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.26.0"
