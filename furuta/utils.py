@@ -2,8 +2,6 @@
 from pathlib import Path
 
 import numpy as np
-import pinocchio as pin
-from gymnasium import spaces
 from scipy import signal
 
 THETA = 0
@@ -13,11 +11,6 @@ ALPHA_DOT = 3
 
 
 ROOT_DIR = Path.home() / "Documents/perso/pendulum_workspace/"
-
-robot = pin.RobotWrapper.BuildFromURDF(
-    str(ROOT_DIR / "src/robot/hardware/furuta.urdf"),
-    package_dirs=[str(ROOT_DIR / "src/robot/hardware/CAD/stl/")],
-)
 
 
 class VelocityFilter:
