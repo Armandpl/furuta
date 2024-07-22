@@ -1,18 +1,17 @@
 import struct
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import pinocchio as pin
 import serial
 
-from furuta.utils import ROOT_DIR
-
 
 @dataclass
 class RobotModel:
     robot = pin.RobotWrapper.BuildFromURDF(
-        str(ROOT_DIR / "src/robot/hardware/URDF/robot.urdf"),
-        package_dirs=[str(ROOT_DIR / "src/robot/hardware/URDF/STL/")],
+        "robot/hardware/URDF/robot.urdf",
+        package_dirs=[str(Path("robot/hardware/URDF/STL/").absolute())],
     )
 
 

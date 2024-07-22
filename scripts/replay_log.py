@@ -1,10 +1,11 @@
+from pathlib import Path
+
 from furuta.logger import Logger
 from furuta.robot import RobotModel
-from furuta.utils import ROOT_DIR
 from furuta.viewer import RobotViewer
 
 logger = Logger()
-logger.load(ROOT_DIR / "logs/rollout")
+logger.load(Path("../logs/rollout"))
 logger.plot()
 
 robot_viewer = RobotViewer(RobotModel.robot)

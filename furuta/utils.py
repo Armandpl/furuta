@@ -1,6 +1,4 @@
 # https://git.ias.informatik.tu-darmstadt.de/quanser/clients/-/blob/v0.1.1/quanser_robots/common.py
-from pathlib import Path
-
 import numpy as np
 from scipy import signal
 
@@ -8,9 +6,6 @@ THETA = 0
 ALPHA = 1
 THETA_DOT = 2
 ALPHA_DOT = 3
-
-
-ROOT_DIR = Path.home() / "Documents/perso/pendulum_workspace/"
 
 
 class VelocityFilter:

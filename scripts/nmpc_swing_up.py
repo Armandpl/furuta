@@ -1,4 +1,5 @@
 import time
+from pathlib import Path
 
 import crocoddyl
 import numpy as np
@@ -8,17 +9,14 @@ from furuta.controls.utils import read_parameters_file
 from furuta.logger import Logger
 from furuta.robot import RobotModel
 from furuta.sim import SimulatedRobot
-from furuta.utils import ROOT_DIR
 from furuta.viewer import RobotViewer
 
-LOG_DIR = ROOT_DIR / "logs/closed_loop/"
+LOG_DIR = Path("../logs/closed_loop/")
 
 T_SIM = 3.0
 
 # Read parameters
-parameters = read_parameters_file(ROOT_DIR / "src/scripts/configs/parameters.json")[
-    "swing_up_controller"
-]
+parameters = read_parameters_file("scripts/configs/parameters.json")["swing_up_controller"]
 
 # Time constants
 t_final = parameters["t_final"]  # MPC Time Horizon (s)

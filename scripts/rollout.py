@@ -1,12 +1,13 @@
+from pathlib import Path
+
 import numpy as np
 
 from furuta.logger import Logger
 from furuta.robot import RobotModel
 from furuta.sim import SimulatedRobot
-from furuta.utils import ROOT_DIR
 from furuta.viewer import RobotViewer
 
-LOG_DIR = ROOT_DIR / "logs/rollout/"
+LOG_DIR = Path("../logs/rollout/")
 
 # Time constants
 t_final = 3.0
