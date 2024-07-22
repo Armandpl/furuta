@@ -1,19 +1,22 @@
 import time
 
+import crocoddyl
 import numpy as np
-import pinocchio as pin
 
 from furuta.controls.controllers import SwingUpController
 from furuta.controls.utils import read_parameters_file
-from furuta.sim import Logger, RobotData, RobotViewer, SimulatedRobot
+from furuta.logger import Logger
+from furuta.robot import RobotModel
+from furuta.sim import SimulatedRobot
+from furuta.utils import ROOT_DIR
+from furuta.viewer import RobotViewer
 
-ROOT_DIR = "/home/pierfabre/pendulum_workspace/src/furuta/"
-LOGS_DIR = "/home/pierfabre/pendulum_workspace/logs/closed_loop/"
+LOG_DIR = ROOT_DIR / "logs/closed_loop/"
 
 T_SIM = 3.0
 
 # Read parameters
-parameters = read_parameters_file(ROOT_DIR + "scripts/configs/parameters.json")[
+parameters = read_parameters_file(ROOT_DIR / "src/scripts/configs/parameters.json")[
     "swing_up_controller"
 ]
 
@@ -27,11 +30,8 @@ times = np.arange(0, T_SIM, time_step)
 # Initial state
 init_state = np.array([0.0, np.pi, 0.0, 0.0])
 
-# Create robot from URDF
-robot = pin.RobotWrapper.BuildFromURDF(
-    ROOT_DIR + "robot/hardware/furuta.urdf",
-    package_dirs=[ROOT_DIR + "robot/hardware/CAD/stl/"],
-)
+# Robot
+robot = RobotModel.robot
 
 # Desired State
 x_ref = np.zeros((robot.model.nq + robot.model.nv,))
@@ -40,23 +40,20 @@ x_ref = np.zeros((robot.model.nq + robot.model.nv,))
 controller = SwingUpController(robot, parameters, x_ref)
 
 # Create the data logger
-data = RobotData()
 logger = Logger()
 
 # Solve the OCP a first time to get the warm start
-controller.compute_command(state=init_state, max_iter=500, callback=True)
+controller.compute_command(init_state)
 
 # Create the robot viewer
 robot_viewer = RobotViewer(robot)
 
 # Display the solution
 robot_viewer.animate(np.arange(0, t_final, time_step), controller.solver.xs.tolist())
+crocoddyl.plotOCSolution(controller.solver.xs, controller.solver.us)
 
 # Create the simulated robot
-sim = SimulatedRobot(robot)
-
-# Set the initial state
-sim.state = init_state
+sim = SimulatedRobot(robot, init_state, dt=1e-6)
 
 # Warm start
 x_ws = controller.solver.xs
@@ -73,12 +70,11 @@ for t in times:
     # Get the warm start from the controller
     x_ws, u_ws = controller.get_warm_start()
     # Log data
-    data.update(time=t, state=sim.state.tolist(), control=u, elapsed_time=toc - tic)
-    logger.update(data)
+    logger.update(time=t, state=sim.state, control=u, elapsed_time=toc - tic)
 
-# Save and visualize
-logger.save(LOGS_DIR)
-# Create the robot viewer
-robot_viewer = RobotViewer(robot)
-robot_viewer.animate(logger.times, logger.states)
+# Save log and plot
 logger.plot()
+logger.save(LOG_DIR)
+
+# Animate
+robot_viewer.animate_log(logger)

@@ -1,9 +1,12 @@
 import numpy as np
-import pinocchio as pin
 
-from furuta.sim import Logger, RobotData, RobotViewer, SimulatedRobot
+from furuta.logger import Logger
+from furuta.robot import RobotModel
+from furuta.sim import SimulatedRobot
+from furuta.utils import ROOT_DIR
+from furuta.viewer import RobotViewer
 
-ROOT_DIR = "/home/pierfabre/pendulum_workspace/src/furuta/"
+LOG_DIR = ROOT_DIR / "logs/rollout/"
 
 # Time constants
 t_final = 3.0
@@ -12,31 +15,29 @@ time_step = 1 / control_freq
 
 times = np.arange(0, t_final, time_step)
 
-# Create robot from URDF
-robot = pin.RobotWrapper.BuildFromURDF(
-    ROOT_DIR + "robot/hardware/furuta.urdf",
-    package_dirs=[ROOT_DIR + "robot/hardware/CAD/stl/"],
-)
+# Set the initial state
+init_state = np.array([0.0, 1e-2, 0.0, 0.0])
+
+# Robot
+robot = RobotModel.robot
 
 # Create the simulation
-sim = SimulatedRobot(robot)
+sim = SimulatedRobot(robot, init_state, dt=1e-6)
 
 # Create the data logger
-data = RobotData()
 logger = Logger()
-
-# Set the initial state
-state = np.array([0.0, 0.01, 0.0, 0.0])
-sim.state = state
+logger.update(time=0.0, state=sim.state)
 
 # Rollout
 u = 0.0
-for t in times:
-    data.update(time=t, state=sim.state.tolist())
-    logger.update(data)
-    state = sim.step(u, time_step)
+for t in times[1:]:
+    sim.step(u, time_step)
+    logger.update(t, sim.state)
 
-# Animate and plot
-robot_viewer = RobotViewer(robot)
-robot_viewer.animate(logger.times, logger.states)
+# Save log and plot
 logger.plot()
+logger.save(LOG_DIR)
+
+# Animate
+robot_viewer = RobotViewer(robot)
+robot_viewer.animate_log(logger)
