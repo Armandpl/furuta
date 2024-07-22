@@ -1,31 +1,17 @@
+import typing as tp
 from abc import ABC, abstractmethod
-from typing import Dict
 
 import crocoddyl
 import mim_solvers
 import numpy as np
 from simple_pid import PID
-
-ROOT_DIR = "/home/pierfabre/pendulum_workspace/src/furuta/"
+import pinocchio as pin
 
 
 class Controller(ABC):
     @abstractmethod
-    def compute_command(self, position: float):
+    def compute_command(self, state):
         pass
-
-    @staticmethod
-    def build_controller(parameters: dict):
-        controller_type = parameters["controller_type"]
-        # match controller_type:
-        #     case "PIDController":
-        #         return PIDController(parameters)
-        #     case _:
-        #         raise ValueError(f"Invalid controller type: {controller_type}")
-        if controller_type == "PIDController":
-            return PIDController(parameters)
-        else:
-            raise ValueError(f"Invalid controller type: {controller_type}")
 
 
 class PIDController(Controller):
@@ -50,7 +36,7 @@ class PIDController(Controller):
         return self.pid(position)
 
 
-class SwingUpController:
+class SwingUpController(Controller):
     class FurutaActuationModel(crocoddyl.ActuationModelAbstract):
         # TODO : Implement in c++ if too slow
         def __init__(self, state):
@@ -68,14 +54,14 @@ class SwingUpController:
             data.dtau_du[0] = 1
             data.dtau_du[1] = 0
 
-    def __init__(self, robot, parameters: Dict, xref: np.ndarray):
+    def __init__(self, robot: pin.RobotWrapper, parameters: tp.Dict, xref: np.ndarray):
 
         # Read parameters
-        control_freq = parameters["control_frequency"]
-        t_final = parameters["t_final"]
-        self.u_lim = parameters["u_lim"]
-        constraints_type = parameters["constraints_type"]
-        self.solver_type = parameters["solver_type"]
+        control_freq: float = parameters["control_frequency"]
+        t_final: float = parameters["t_final"]
+        self.u_lim: float = parameters["u_lim"]
+        constraints_type: str = parameters["constraints_type"]
+        self.solver_type: str = parameters["solver_type"]
 
         # Time variables
         dt = 1 / control_freq  # Time step
@@ -118,12 +104,12 @@ class SwingUpController:
 
         # Running cost
         runningCostModel = crocoddyl.CostModelSum(state, nu=actuationModel.nu)
-        runningCostModel.addCost("state_cost", cost=stateCostModel, weight=1)
-        runningCostModel.addCost("control_cost", cost=controlCost, weight=0.1)
+        runningCostModel.addCost("state_cost", cost=stateCostModel, weight=0.001)
+        runningCostModel.addCost("control_cost", cost=controlCost, weight=100.0)
 
         # Terminal cost
         terminalCostModel = crocoddyl.CostModelSum(state, nu=actuationModel.nu)
-        terminalCostModel.addCost("state_cost", cost=stateCostModel, weight=10 * self.T)
+        terminalCostModel.addCost("state_cost", cost=stateCostModel, weight=self.T)
 
         # IAM
         self.runningModel = crocoddyl.IntegratedActionModelEuler(
@@ -146,12 +132,23 @@ class SwingUpController:
         # Create the shooting problem
         self.create_problem(q0)
 
-    def create_problem(self, state):
+    def create_problem(self, state: np.ndarray):
         self.problem = crocoddyl.ShootingProblem(
             state, [self.runningModel] * self.T, self.terminalModel
         )
 
-    def compute_command(self, state, max_iter, x_ws=[], u_ws=[], callback=False):
+    def get_warm_start(self) -> tp.Tuple[np.ndarray, np.ndarray]:
+        xs = self.solver.xs
+        us = self.solver.us
+        xs[:-1] = xs[1:]
+        xs[-1] = self.solver.xs[-1]
+        us[:-1] = us[1:]
+        us[-1] = self.solver.us[-1]
+        return xs, us
+
+    def compute_command(
+        self, state: np.ndarray, max_iter: float = 500, x_ws=[], u_ws=[], callback=True
+    ) -> float:
         self.create_problem(state)
         if self.solver_type == "CSQP":
             self.solver = mim_solvers.SolverCSQP(self.problem)
@@ -167,12 +164,3 @@ class SwingUpController:
         # Clamp the control signal
         u = np.clip(self.solver.us[0][0], -self.u_lim, self.u_lim)
         return u
-
-    def get_warm_start(self):
-        xs = self.solver.xs
-        us = self.solver.us
-        xs[:-1] = xs[1:]
-        xs[-1] = self.solver.xs[-1]
-        us[:-1] = us[1:]
-        us[-1] = self.solver.us[-1]
-        return xs, us

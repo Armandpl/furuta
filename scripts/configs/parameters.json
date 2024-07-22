@@ -17,8 +17,8 @@
     "swing_up_controller":{
         "control_frequency": 100,
         "t_final": 1.0,
-        "u_lim": 3.0,
-        "constraints_type": "NONE",
-        "solver_type": "FDDP"
+        "u_lim": 1.0,
+        "constraints_type": "HARD",
+        "solver_type": "CSQP"
     }
 }
