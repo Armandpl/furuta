@@ -11,7 +11,7 @@ python = ">=3.9,<4.0"
 gymnasium = "^0.29.1"
 pyserial = "^3.5"
 simple-pid = "^2.0.0"
-mcap-protobuf-support = "^0.4.1"
+mcap-protobuf-support = ">=0.4.1"
 scipy = "^1.11.4"
 pygame = "^2.5.2"
 
