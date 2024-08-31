@@ -8,7 +8,7 @@ import serial
 class Robot:
     def __init__(
         self,
-        device="dev/ttyACM0",
+        device="/dev/ttyACM0",
         baudrate=921600,
         motor_encoder_cpr=400,
         pendulum_encoder_cpr=5120 * 4,
