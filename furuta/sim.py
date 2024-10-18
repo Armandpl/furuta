@@ -1,7 +1,7 @@
 import numpy as np
 import pinocchio as pin
 
-from furuta.robot import PendulumDynamics
+from furuta.robot import PendulumDynamics, Encoders
 
 
 class SimulatedRobot:
@@ -10,6 +10,7 @@ class SimulatedRobot:
         self.state = init_state
         self.dt = dt
         self.dyn = PendulumDynamics(robot)
+        self.encoders = Encoders()
 
     def step(self, u: float, dt: float) -> np.ndarray:
         """Simulate the robot for a given control input for a given duration :param u: control
@@ -25,4 +26,4 @@ class SimulatedRobot:
             q = pin.integrate(self.robot.model, q, v * self.dt)
             t += self.dt
         self.state = np.concatenate((q, v))
-        return self.state
+        return self.encoders.measure(self.state[:2])
