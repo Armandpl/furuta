@@ -30,3 +30,6 @@ class SimpleLogger:
             plt.subplot(2, 2, i + 1)
             plt.plot(self.times, np.array(self.states)[:, i])
             plt.title(STATE[i])
+
+    def show():
+        plt.show()

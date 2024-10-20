@@ -39,6 +39,7 @@ for i, t in enumerate(times[1:]):
 
 # Save log and plot
 logger.plot()
+logger.show()
 logger.save(LOG_DIR)
 
 # Animate
