@@ -1,7 +1,7 @@
 import numpy as np
 import pinocchio as pin
 
-from furuta.robot import PendulumDynamics, Encoders
+from furuta.robot import Encoders, PendulumDynamics
 
 
 class SimulatedRobot:

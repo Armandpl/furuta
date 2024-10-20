@@ -91,16 +91,28 @@ class PendulumDynamics:
         a = pin.aba(self.model, self.data, q, v, tau)
         return a
 
+
 class Encoders:
     def __init__(self):
         self.motor_encoder_cpr = 400.0
         self.pendulum_encoder_cpr = 5120.0
 
     def measure(self, angles):
-        motor_angle = int(angles[0] / (2 * np.pi) * self.motor_encoder_cpr) * 2 * np.pi / self.motor_encoder_cpr
-        pendulum_angle = int(angles[1] / (2 * np.pi) * self.pendulum_encoder_cpr) * 2 * np.pi / self.pendulum_encoder_cpr
+        motor_angle = (
+            int(angles[0] / (2 * np.pi) * self.motor_encoder_cpr)
+            * 2
+            * np.pi
+            / self.motor_encoder_cpr
+        )
+        pendulum_angle = (
+            int(angles[1] / (2 * np.pi) * self.pendulum_encoder_cpr)
+            * 2
+            * np.pi
+            / self.pendulum_encoder_cpr
+        )
         return motor_angle, pendulum_angle
-        
+
+
 class QubeDynamics:
     """Solve equation M qdd + C(q, qd) = tau for qdd."""
 
