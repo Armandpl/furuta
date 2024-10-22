@@ -1,4 +1,5 @@
 import time
+from abc import abstractmethod
 
 import numpy as np
 import pinocchio as pin
@@ -9,17 +10,35 @@ from furuta.logger import SimpleLogger
 from furuta.utils import ALPHA, THETA
 
 
-class RobotViewer:
+class AbstractViewer:
+    @abstractmethod
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def display(self):
+        pass
+
+    @abstractmethod
+    def close(self):
+        pass
+
+
+class Viewer3D(AbstractViewer):
     def __init__(self, robot: pin.RobotWrapper = None):
         self.robot = robot
-        viewer = Viewer()
+        self.viewer = Viewer()
         # Attach the robot to the viewer scene
         self.robot.setVisualizer(Panda3dVisualizer())
-        self.robot.initViewer(viewer=viewer)
+        self.robot.initViewer(viewer=self.viewer)
         self.robot.loadViewerModel(group_name=self.robot.model.name)
 
     def display(self, q: np.ndarray):
         self.robot.display(q)
+        return self.viewer.get_screenshot(requested_format="RGB")
+
+    def close(self):
+        self.viewer.close()
 
     def animate(self, times: np.ndarray, states: np.ndarray):
         # Initial state
@@ -38,7 +57,7 @@ class RobotViewer:
         self.animate(log.times, log.states)
 
 
-class Viewer2D:
+class Viewer2D(AbstractViewer):
     def __init__(self, render_fps: int, render_mode: str = None):
         self.render_fps = render_fps
         self.render_mode = render_mode
@@ -48,7 +67,7 @@ class Viewer2D:
         self.screen = None
         self.clock = None
 
-    def render(self, state):
+    def display(self, state):
         # https://github.com/Farama-Foundation/Gymnasium/blob/6baf8708bfb08e37ce3027b529193169eaa230fd/gymnasium/envs/classic_control/cartpole.py#L229
         import pygame
         from pygame import gfxdraw

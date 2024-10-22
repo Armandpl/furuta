@@ -5,7 +5,7 @@ import numpy as np
 from furuta.logger import SimpleLogger
 from furuta.robot import RobotModel
 from furuta.sim import SimulatedRobot
-from furuta.viewer import RobotViewer
+from furuta.viewer import Viewer3D
 
 LOG_DIR = Path("../logs/rollout/")
 
@@ -29,6 +29,8 @@ sim = SimulatedRobot(robot, init_state, dt=1e-5)
 logger = SimpleLogger()
 logger.update(time=0.0, state=init_state)
 
+robot_viewer = Viewer3D(robot)
+
 # Rollout
 u = 0.0
 for i, t in enumerate(times[1:]):
@@ -43,5 +45,5 @@ logger.show()
 logger.save(LOG_DIR)
 
 # Animate
-robot_viewer = RobotViewer(robot)
+robot_viewer = Viewer3D(robot)
 robot_viewer.animate_log(logger)

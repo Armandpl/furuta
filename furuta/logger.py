@@ -31,5 +31,5 @@ class SimpleLogger:
             plt.plot(self.times, np.array(self.states)[:, i])
             plt.title(STATE[i])
 
-    def show():
+    def show(self):
         plt.show()

@@ -150,7 +150,7 @@ class FurutaBase(gym.Env):
         raise NotImplementedError
 
     def render(self):
-        self.viewer.render(self._state)
+        return self.viewer.display(self._state)
 
     def close(self):
         self.viewer.close()
