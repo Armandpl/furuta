@@ -7,11 +7,10 @@ from mcap_protobuf.reader import read_protobuf_messages
 from furuta.robot import RobotModel
 from furuta.viewer import Viewer2D, Viewer3D
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-t", "--type", required=False, default="2D", choices=("2D", "3D"))
-parser.add_argument("-f", "--file_path", required=True)
-
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t", "--type", required=False, default="2D", choices=("2D", "3D"))
+    parser.add_argument("-f", "--file_path", required=True)
     args = parser.parse_args()
     if args.type == "2D":
         viewer = Viewer2D(render_fps=30, render_mode="rgb_array")

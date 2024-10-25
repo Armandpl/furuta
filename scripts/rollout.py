@@ -8,13 +8,11 @@ from furuta.robot import RobotModel
 from furuta.sim import SimulatedRobot
 from furuta.viewer import Viewer3D
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-d", "--dir", default="../logs/rollout/", required=False, help="Log destination directory"
-)
-
 if __name__ == "__main__":
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-d", "--dir", default="../logs/rollout/", required=False, help="Log destination directory"
+    )
     args = parser.parse_args()
 
     # Time constants
