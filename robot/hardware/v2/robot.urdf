@@ -4,7 +4,7 @@
     <visual>
         <origin xyz="0.00058914269298856124756 -0.00066759196360875738829 0.0020813262730572934522" rpy="1.5707963267949303088 2.6117996654306545712e-14 0.99208669193682585963" />
         <geometry>
-            <mesh filename="package:///motor_mount.stl"/>
+            <mesh filename="package:///37d_motor_mount.stl"/>
         </geometry>
         <material name="motor_mount_material">
             <color rgba="0.49803921568627451677 0.49803921568627451677 0.49803921568627451677 1.0"/>
@@ -21,7 +21,7 @@
     <visual>
         <origin xyz="0 -4.336808689942017736e-19 -0.0060000000000000192069" rpy="1.570796326794896558 -3.3588218230113393277e-31 -5.6972761659914007382e-30" />
         <geometry>
-            <mesh filename="package:///big_arm_v30.stl"/>
+            <mesh filename="package:///37d_arm.stl"/>
         </geometry>
         <material name="big_arm_v30_material">
             <color rgba="0.98039215686274505668 0.71372549019607844922 0.0039215686274509803377 1.0"/>
