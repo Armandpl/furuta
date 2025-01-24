@@ -45,6 +45,10 @@ REWARDS = {
 
 
 class FurutaBase(gym.Env):
+    metadata = {
+        "render_modes": ["rgb_array", "human"],
+    }
+
     def __init__(
         self,
         control_freq,
@@ -53,6 +57,7 @@ class FurutaBase(gym.Env):
         speed_limits=[60, 400],  # used to avoid damaging the real robot or diverging sim
         render_mode="rgb_array",
     ):
+        self.metadata["render_fps"] = control_freq
         self.viewer = Viewer2D(control_freq, render_mode)
 
         self.timing = Timing(control_freq)
