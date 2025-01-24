@@ -17,7 +17,7 @@ class AbstractViewer(ABC):
 
     @classmethod
     @abstractmethod
-    def display(cls, state: np.ndarray) -> (np.ndarray | None):
+    def display(cls, state: np.ndarray) -> np.ndarray:
         pass
 
     @classmethod
@@ -65,7 +65,7 @@ class Viewer2D(AbstractViewer):
         cls.screen = None
         cls.clock = None
 
-    def display(cls, state: np.ndarray):
+    def display(cls, state: np.ndarray) -> np.ndarray:
         # https://github.com/Farama-Foundation/Gymnasium/blob/6baf8708bfb08e37ce3027b529193169eaa230fd/gymnasium/envs/classic_control/cartpole.py#L229
         import pygame
         from pygame import gfxdraw
@@ -148,8 +148,7 @@ class Viewer2D(AbstractViewer):
             cls.clock.tick(cls.render_fps)
             pygame.display.flip()
 
-        elif cls.render_mode == "rgb_array":
-            return np.transpose(np.array(pygame.surfarray.pixels3d(cls.screen)), axes=(1, 0, 2))
+        return np.transpose(np.array(pygame.surfarray.pixels3d(cls.screen)), axes=(1, 0, 2))
 
     def close(cls):
         if cls.screen is not None:
