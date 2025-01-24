@@ -1,35 +1,64 @@
-import typing as tp
 from pathlib import Path
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
+from mcap_protobuf.reader import read_protobuf_messages
+from mcap_protobuf.writer import Writer
 
-STATE = ["phi", "theta", "phi_dot", "theta_dot"]
+from furuta.logging.protobuf.pendulum_state_pb2 import PendulumState
+from furuta.utils import STATE, State
 
 
 class SimpleLogger:
-    def __init__(self):
-        self.times: tp.List[float] = []
-        self.states: tp.List[np.ndarray] = []
+    def __init__(self, log_path: (str | Path)):
+        self.log_path = log_path
 
-    def update(self, time: float, state: np.ndarray):
-        self.times.append(time)
-        self.states.append(state)
+    def start(self):
+        self.output_file = open(self.log_path, "wb")
+        self.mcap_writer = Writer(self.output_file)
 
-    def save(self, directory: Path):
-        np.save(directory / "times.npy", self.times)
-        np.save(directory / "states.npy", np.array(self.states))
+    def stop(self):
+        self.mcap_writer.finish()
+        self.output_file.close()
 
-    def load(self, directory: Path):
-        self.states = np.load(directory / "states.npy")
-        self.times = np.load(directory / "times.npy")
+    def update(self, time_ns: int, state: State):
+        self.mcap_writer.write_message(
+            topic="/pendulum_state",
+            message=PendulumState(
+                motor_angle=state.motor_angle,
+                pendulum_angle=state.pendulum_angle,
+                motor_angle_velocity=state.motor_angle_velocity,
+                pendulum_angle_velocity=state.pendulum_angle_velocity,
+                reward=state.reward,
+                action=state.action,
+            ),
+            log_time=time_ns,
+            publish_time=time_ns,
+        )
 
-    def plot(self):
-        plt.figure(1)
-        for i in range(len(STATE)):
-            plt.subplot(2, 2, i + 1)
-            plt.plot(self.times, np.array(self.states)[:, i])
-            plt.title(STATE[i])
+    def load(self) -> tuple[np.ndarray, np.ndarray]:
+        times: List[float] = list()
+        states: List[np.ndarray] = list()
+        for msg in read_protobuf_messages(self.log_path, log_time_order=True):
+            p = msg.proto_msg
+            state = np.array(
+                [
+                    p.motor_angle,
+                    p.pendulum_angle,
+                    p.motor_angle_velocity,
+                    p.pendulum_angle_velocity,
+                    p.reward,
+                    p.action,
+                ]
+            )
+            times.append(float(msg.log_time_ns * 1e-9))
+            states.append(state)
+        return np.array(times), np.array(states)
 
-    def show(self):
+    def plot(self, times: List[float], states: List[np.ndarray]):
+        for title, idx in STATE.items():
+            plt.figure(idx + 1)
+            plt.plot(times, states[:, idx])
+            plt.title(title)
         plt.show()

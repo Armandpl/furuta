@@ -6,7 +6,6 @@ import pinocchio as pin
 from panda3d_viewer import Viewer
 from pinocchio.visualize.panda3d_visualizer import Panda3dVisualizer
 
-from furuta.logger import SimpleLogger
 from furuta.utils import ALPHA, THETA
 
 
@@ -26,6 +25,18 @@ class AbstractViewer(ABC):
     def close(cls):
         pass
 
+    def animate(cls, times: np.ndarray, states: np.ndarray):
+        # Initial state
+        q = states[:, :2]
+        cls.display(q[0])
+        time.sleep(1.0)
+        tic = time.time()
+        for i in range(1, len(times)):
+            toc = time.time()
+            time.sleep(max(0, times[i] - times[i - 1] - (toc - tic)))
+            tic = time.time()
+            cls.display(q[i])
+
 
 class Viewer3D(AbstractViewer):
     def __init__(cls, robot: pin.RobotWrapper = None):
@@ -43,25 +54,9 @@ class Viewer3D(AbstractViewer):
     def close(cls):
         cls.viewer.close()
 
-    def animate(cls, times: np.ndarray, states: np.ndarray):
-        # Initial state
-        q = np.array(states)[:, :2]
-        cls.display(q[0])
-        time.sleep(1.0)
-        tic = time.time()
-        for i in range(1, len(times)):
-            toc = time.time()
-            time.sleep(max(0, times[i] - times[i - 1] - (toc - tic)))
-            tic = time.time()
-            if i % 10 == 0:
-                cls.display(q[i])
-
-    def animate_log(cls, log: SimpleLogger):
-        cls.animate(log.times, log.states)
-
 
 class Viewer2D(AbstractViewer):
-    def __init__(cls, render_fps: int = 50, render_mode: str = None):
+    def __init__(cls, render_fps: int = 30, render_mode: str = "human"):
         cls.render_fps = render_fps
         cls.render_mode = render_mode
 
