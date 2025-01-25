@@ -2,7 +2,7 @@
     "documentId": "5d10de487316a32e06c68c4c",
     "outputFormat": "urdf",
     "assemblyName": "big_motor_assembly",
-    "mergeSTLs": "collision",
-    "simplifySTLs": "no",
+    "mergeSTLs": "all",
+    "simplifySTLs": "all",
     "maxSTLSize": 3
 }
