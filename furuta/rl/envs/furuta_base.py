@@ -5,6 +5,7 @@ import numpy as np
 from gymnasium.spaces import Box
 
 from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, Timing
+from furuta.viewer import Viewer2D
 
 
 def exp_alpha_theta_reward(state, exp=2):
@@ -56,17 +57,12 @@ class FurutaBase(gym.Env):
         speed_limits=[60, 400],  # used to avoid damaging the real robot or diverging sim
         render_mode="rgb_array",
     ):
-        self.render_mode = render_mode
         self.metadata["render_fps"] = control_freq
+        self.viewer = Viewer2D(control_freq, render_mode)
 
         self.timing = Timing(control_freq)
         self._state = None
         self.reward = reward
-
-        self.screen_width = 600
-        self.screen_height = 400
-        self.screen = None
-        self.clock = None
 
         self._reward_func = REWARDS[self.reward]
 
@@ -159,101 +155,7 @@ class FurutaBase(gym.Env):
         raise NotImplementedError
 
     def render(self):
-        # https://github.com/Farama-Foundation/Gymnasium/blob/6baf8708bfb08e37ce3027b529193169eaa230fd/gymnasium/envs/classic_control/cartpole.py#L229
-        if self.render_mode is None:
-            assert self.spec is not None
-            gym.logger.warn(
-                "You are calling render method without specifying any render mode. "
-                "You can specify the render_mode at initialization, "
-                f'e.g. gym.make("{self.spec.id}", render_mode="rgb_array")'
-            )
-            return
-
-        import pygame
-        from pygame import gfxdraw
-
-        if self.screen is None:
-            pygame.init()
-            if self.render_mode == "human":
-                pygame.display.init()
-                self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
-            else:  # mode == "rgb_array"
-                self.screen = pygame.Surface((self.screen_width, self.screen_height))
-        if self.clock is None:
-            self.clock = pygame.time.Clock()
-
-        world_width = 2 * np.pi
-        scale = self.screen_width / world_width
-        polewidth = 10.0
-        polelen = scale * (2 * 0.5)  # TODO use the right pole len?
-        cartwidth = 50.0
-        cartheight = 30.0
-
-        if self._state is None:
-            return None
-
-        x = self._state
-
-        self.surf = pygame.Surface((self.screen_width, self.screen_height))
-        self.surf.fill((255, 255, 255))
-
-        l, r, t, b = -cartwidth / 2, cartwidth / 2, cartheight / 2, -cartheight / 2
-        axleoffset = cartheight / 4.0
-
-        # make sure theta stays between 0 and 2 * pi
-        theta = (x[THETA] + np.pi) % (2 * np.pi)
-        cartx = theta * scale
-        carty = 100  # TOP OF CART
-        cart_coords = [(l, b), (l, t), (r, t), (r, b)]
-        cart_coords = [(c[0] + cartx, c[1] + carty) for c in cart_coords]
-        gfxdraw.aapolygon(self.surf, cart_coords, (0, 0, 0))
-        gfxdraw.filled_polygon(self.surf, cart_coords, (0, 0, 0))
-
-        l, r, t, b = (
-            -polewidth / 2,
-            polewidth / 2,
-            polelen - polewidth / 2,
-            -polewidth / 2,
-        )
-
-        pole_coords = []
-        for coord in [(l, b), (l, t), (r, t), (r, b)]:
-            coord = pygame.math.Vector2(coord).rotate_rad(x[ALPHA] + np.pi)
-            coord = (coord[0] + cartx, coord[1] + carty + axleoffset)
-            pole_coords.append(coord)
-        gfxdraw.aapolygon(self.surf, pole_coords, (202, 152, 101))
-        gfxdraw.filled_polygon(self.surf, pole_coords, (202, 152, 101))
-
-        gfxdraw.aacircle(
-            self.surf,
-            int(cartx),
-            int(carty + axleoffset),
-            int(polewidth / 2),
-            (129, 132, 203),
-        )
-        gfxdraw.filled_circle(
-            self.surf,
-            int(cartx),
-            int(carty + axleoffset),
-            int(polewidth / 2),
-            (129, 132, 203),
-        )
-
-        gfxdraw.hline(self.surf, 0, self.screen_width, carty, (0, 0, 0))
-
-        self.surf = pygame.transform.flip(self.surf, False, True)
-        self.screen.blit(self.surf, (0, 0))
-        if self.render_mode == "human":
-            pygame.event.pump()
-            self.clock.tick(self.metadata["render_fps"])
-            pygame.display.flip()
-
-        elif self.render_mode == "rgb_array":
-            return np.transpose(np.array(pygame.surfarray.pixels3d(self.screen)), axes=(1, 0, 2))
+        return self.viewer.display(self._state)
 
     def close(self):
-        if self.screen is not None:
-            import pygame
-
-            pygame.display.quit()
-            pygame.quit()
+        self.viewer.close()

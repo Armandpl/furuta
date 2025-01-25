@@ -1,12 +1,32 @@
 # https://git.ias.informatik.tu-darmstadt.de/quanser/clients/-/blob/v0.1.1/quanser_robots/common.py
+from dataclasses import dataclass
+
 import numpy as np
-from gymnasium import spaces
 from scipy import signal
 
 THETA = 0
 ALPHA = 1
 THETA_DOT = 2
 ALPHA_DOT = 3
+
+STATE = {
+    "motor_angle": 0,
+    "pendulum_angle": 1,
+    "motor_angle_velocity": 2,
+    "pendulum_angle_velocity": 3,
+    "reward": 4,
+    "action": 5,
+}
+
+
+@dataclass
+class State:
+    motor_angle: float = 0.0
+    pendulum_angle: float = 0.0
+    motor_angle_velocity: float = 0.0
+    pendulum_angle_velocity: float = 0.0
+    reward: float = 0.0
+    action: float = 0.0
 
 
 class VelocityFilter:
