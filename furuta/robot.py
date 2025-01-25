@@ -10,10 +10,10 @@ import serial
 @dataclass
 class RobotModel:
     robot = None
-    # robot = pin.RobotWrapper.BuildFromURDF(
-    #     "robot/hardware/URDF/robot.urdf",
-    #     package_dirs=[str(Path("robot/hardware/URDF/STL/").absolute())],
-    # )
+    robot = pin.RobotWrapper.BuildFromURDF(
+        "robot/hardware/v2/robot.urdf",
+        package_dirs=[str(Path("robot/hardware/v2/stl/").absolute())],
+    )
 
 
 class Robot:
