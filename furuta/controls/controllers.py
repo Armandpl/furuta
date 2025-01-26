@@ -104,8 +104,8 @@ class SwingUpController(Controller):
 
         # Running cost
         runningCostModel = crocoddyl.CostModelSum(state, nu=actuationModel.nu)
-        # runningCostModel.addCost("state_cost", cost=stateCostModel, weight=1e-6)
-        # runningCostModel.addCost("control_cost", cost=controlCost, weight=1e-3)
+        runningCostModel.addCost("state_cost", cost=stateCostModel, weight=1e-7)
+        runningCostModel.addCost("control_cost", cost=controlCost, weight=1e-2)
 
         # Terminal cost
         terminalCostModel = crocoddyl.CostModelSum(state, nu=actuationModel.nu)

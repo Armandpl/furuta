@@ -104,7 +104,9 @@ if __name__ == "__main__":
         # Get the warm start from the controller
         x_ws, u_ws = controller.get_warm_start()
         # Log data
-        state = State(motor_angle, pendulum_angle, motor_speed, pendulum_speed, action=u)
+        # FIXME: Use the measured state
+        # state = State(motor_angle, pendulum_angle, motor_speed, pendulum_speed, action=u)
+        state = State(sim.state[0], sim.state[1], sim.state[2], sim.state[3], action=u)
         logger.update(int(t * 1e9), state)
 
     # Close logger
