@@ -4,5 +4,5 @@
     "assemblyName": "big_motor_assembly",
     "mergeSTLs": "all",
     "simplifySTLs": "all",
-    "maxSTLSize": 3
+    "maxSTLSize": 1
 }
