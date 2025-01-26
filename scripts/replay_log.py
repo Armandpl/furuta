@@ -1,9 +1,8 @@
 import argparse
 
 from furuta.logger import SimpleLogger
-
-# from furuta.robot import RobotModel
-from furuta.viewer import Viewer2D  # , Viewer3D
+from furuta.robot import RobotModel
+from furuta.viewer import Viewer2D, Viewer3D
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -17,9 +16,7 @@ if __name__ == "__main__":
     if args.type == "2D":
         viewer = Viewer2D()
     else:
-        print("3D viewer is not supported yet")
-        assert False
-        # viewer = Viewer3D(RobotModel.robot)
+        viewer = Viewer3D(RobotModel.robot)
 
     viewer.animate(times, states)
     viewer.close()

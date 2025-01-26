@@ -4,11 +4,10 @@ from time import strftime
 import numpy as np
 
 from furuta.logger import SimpleLogger
+from furuta.robot import RobotModel
+from furuta.sim import SimulatedRobot
 from furuta.utils import State
-
-# from furuta.robot import RobotModel
-# from furuta.sim import SimulatedRobot
-from furuta.viewer import Viewer2D
+from furuta.viewer import Viewer3D
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -28,7 +27,7 @@ if __name__ == "__main__":
     state = State(0.0, 3.14, 0.0, 0.0)
 
     # Robot
-    # robot = RobotModel.robot
+    robot = RobotModel.robot
 
     # Create the simulation
     sim_state = np.array(
@@ -39,7 +38,7 @@ if __name__ == "__main__":
             state.pendulum_angle_velocity,
         ]
     )
-    # sim = SimulatedRobot(robot, sim_state, dt=1e-5)
+    sim = SimulatedRobot(robot, sim_state, dt=1e-5)
 
     # Create the logger
     fname = f"{strftime('%Y%m%d-%H%M%S')}.mcap"
@@ -50,8 +49,7 @@ if __name__ == "__main__":
     # Rollout
     u = 0.0
     for i, t in enumerate(times[1:]):
-        # motor_angle, pendulum_angle = sim.step(u, time_step)
-        motor_angle, pendulum_angle = 0.0, 0.0
+        motor_angle, pendulum_angle = sim.step(u, time_step)
         motor_speed = (motor_angle - state.motor_angle) / time_step
         pendulum_speed = (pendulum_angle - state.pendulum_angle) / time_step
         state = State(motor_angle, pendulum_angle, motor_speed, pendulum_speed, action=u)
@@ -63,9 +61,10 @@ if __name__ == "__main__":
     # Read log
     times, states = logger.load()
 
+    # Animate
+    robot_viewer = Viewer3D(robot)
+    robot_viewer.animate(times, states)
+    robot_viewer.close()
+
     # Plot
     logger.plot(times, states)
-
-    # Animate
-    robot_viewer = Viewer2D()
-    robot_viewer.animate(times, states)

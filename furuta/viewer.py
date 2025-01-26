@@ -52,7 +52,7 @@ class Viewer3D(AbstractViewer):
         return cls.viewer.get_screenshot(requested_format="RGB")
 
     def close(cls):
-        cls.viewer.close()
+        cls.viewer.stop()
 
 
 class Viewer2D(AbstractViewer):
