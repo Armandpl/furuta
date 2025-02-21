@@ -10,32 +10,29 @@ from furuta.utils import ALPHA, THETA
 
 
 class AbstractViewer(ABC):
-    @classmethod
     @abstractmethod
-    def __init__(cls):
+    def __init__(self):
         pass
 
-    @classmethod
     @abstractmethod
-    def display(cls, state: np.ndarray) -> np.ndarray:
+    def display(self, state: np.ndarray) -> np.ndarray:
         pass
 
-    @classmethod
     @abstractmethod
-    def close(cls):
+    def close(self):
         pass
 
-    def animate(cls, times: np.ndarray, states: np.ndarray):
+    def animate(self, times: np.ndarray, states: np.ndarray):
         # Initial state
         q = states[:, :2]
-        cls.display(q[0])
+        self.display(q[0])
         time.sleep(1.0)
         tic = time.time()
         for i in range(1, len(times)):
             toc = time.time()
             time.sleep(max(0, times[i] - times[i - 1] - (toc - tic)))
             tic = time.time()
-            cls.display(q[i])
+            self.display(q[i])
 
 
 class Viewer3D(AbstractViewer):
