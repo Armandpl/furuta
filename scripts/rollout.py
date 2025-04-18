@@ -27,7 +27,7 @@ if __name__ == "__main__":
     state = State(0.0, 3.14, 0.0, 0.0)
 
     # Robot
-    robot = RobotModel.robot
+    robot = RobotModel().robot
 
     # Create the simulation
     sim_state = np.array(

@@ -7,13 +7,14 @@ import pinocchio as pin
 import serial
 
 
-@dataclass
 class RobotModel:
-    robot = None
-    robot = pin.RobotWrapper.BuildFromURDF(
-        "robot/hardware/v2/robot.urdf",
-        package_dirs=[str(Path("robot/hardware/v2/stl/").absolute())],
-    )
+    def __init__(self):
+        self.robot = None
+        base_path = Path("robot/hardware/v2/")
+        if base_path.exists():
+            urdf_path = str(base_path / "robot.urdf")
+            stls_path = str(base_path / "stl")
+            self.robot = pin.RobotWrapper.BuildFromURDF(urdf_path, [stls_path])
 
 
 class Robot:

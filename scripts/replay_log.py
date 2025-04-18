@@ -16,7 +16,7 @@ if __name__ == "__main__":
     if args.type == "2D":
         viewer = Viewer2D()
     else:
-        viewer = Viewer3D(RobotModel.robot)
+        viewer = Viewer3D(RobotModel().robot)
 
     viewer.animate(times, states)
     viewer.close()
