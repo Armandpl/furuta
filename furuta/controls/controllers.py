@@ -78,7 +78,9 @@ class SwingUpController(Controller):
 
         # State Residual
         stateResidual = crocoddyl.ResidualModelState(state, xref=xref, nu=actuationModel.nu)
-        stateCostModel = crocoddyl.CostModelResidual(state, stateResidual)
+        w_x = np.array([10, 50, 1, 1])
+        activation_xreg = crocoddyl.ActivationModelWeightedQuad(w_x)
+        stateCostModel = crocoddyl.CostModelResidual(state, activation_xreg, stateResidual)
 
         # Control Residual
         controlResidual = crocoddyl.ResidualModelControl(state, nu=actuationModel.nu)
@@ -104,12 +106,12 @@ class SwingUpController(Controller):
 
         # Running cost
         runningCostModel = crocoddyl.CostModelSum(state, nu=actuationModel.nu)
-        runningCostModel.addCost("state_cost", cost=stateCostModel, weight=1e-7)
-        runningCostModel.addCost("control_cost", cost=controlCost, weight=1e-2)
+        runningCostModel.addCost("state_cost", cost=stateCostModel, weight=1.0)
+        runningCostModel.addCost("control_cost", cost=controlCost, weight=0.1)
 
         # Terminal cost
         terminalCostModel = crocoddyl.CostModelSum(state, nu=actuationModel.nu)
-        terminalCostModel.addCost("state_cost", cost=stateCostModel, weight=self.T)
+        terminalCostModel.addCost("state_cost", cost=stateCostModel, weight=1.0)
 
         # IAM
         self.runningModel = crocoddyl.IntegratedActionModelEuler(
@@ -162,6 +164,7 @@ class SwingUpController(Controller):
         self.solver.solve(x_ws, u_ws, max_iter, False, 1e-5)
         # Clamp the control signal
         u = np.clip(self.solver.us[0][0], -self.u_lim, self.u_lim)
+        # u = self.solver.us[0][0]
         return u
 
     def get_trajectoy(self) -> np.ndarray:

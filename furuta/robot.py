@@ -22,36 +22,35 @@ class Robot:
         self,
         device="/dev/ttyACM0",
         baudrate=921600,
-        motor_encoder_cpr=400,
-        pendulum_encoder_cpr=5120 * 4,
     ):
         self.ser = serial.Serial(device, baudrate)
-        self.motor_encoder_cpr = motor_encoder_cpr
-        self.pendulum_encoder_cpr = pendulum_encoder_cpr
 
-    def step(self, motor_command: float):
-        direction = motor_command < 0
-        # convert motor command to 16 bit unsigned int
-        int_motor_command = int(np.abs(motor_command) * (2**16 - 1))
+    def step(self, desired_motor_position: float, desired_motor_velocity: float):
         tx = b"\x10\x02"  # start sequence
         tx += b"\x01"  # command type = STEP = 0x01
-        tx += struct.pack("<?H", direction, int_motor_command)
+        tx += struct.pack("<ff", desired_motor_position, desired_motor_velocity)
         self.ser.write(tx)
-        resp = self.ser.read(12)
-        raw_motor_angle, raw_pendulum_angle, raw_timestamp = struct.unpack("<iiL", resp)
-        motor_angle = 2 * np.pi * raw_motor_angle / self.motor_encoder_cpr
-        pendulum_angle = 2 * np.pi * raw_pendulum_angle / self.pendulum_encoder_cpr
+        resp = self.ser.read(24)
+        (
+            motor_angle,
+            pendulum_angle,
+            motor_velocity,
+            pendulum_velocity,
+            raw_timestamp,
+            action,
+        ) = struct.unpack("<ffffLi", resp)
         timestamp = raw_timestamp / 1e6
-        return motor_angle, pendulum_angle, timestamp
+        return motor_angle, pendulum_angle, motor_velocity, pendulum_velocity, timestamp, action
 
     def reset_encoders(self):
         tx = b"\x10\x02"  # start sequence
         tx += b"\x00"  # command type = RESET = 0x00
-        tx += b"\x00\x00\x00"  # three empty bytes to have fixed len packets
+        tx += b"\x00\x00\x00\x00\x00\x00\x00\x00"  # eight empty bytes to have fixed len packets
         self.ser.write(tx)
 
     def close(self):
-        self.step(0)
+        # self.step(0.0, 0.0)
+        self.reset_encoders()
         self.ser.close()
 
 
@@ -248,3 +247,39 @@ class QubeDynamics:
         aldd = (a * y - b * x) / d
 
         return thdd, aldd
+
+
+class SafeRobotWrapper:
+    def __init__(self, robot: Robot):
+        self.robot = robot
+        self.__motor_max_number_rev = 0.5
+        self.__pendulum_angle_threshold = np.deg2rad(60)
+        self.__pendulum_setpoint = np.pi
+
+    def reset_encoders(self):
+        self.robot.reset_encoders()
+
+    def close(self):
+        self.robot.close()
+
+    def step(self, action):
+        # Perform the action
+        motor_angle, pendulum_angle = self.robot.step(action)
+
+        # Run safety checks
+        self.__run_checks(motor_angle, np.mod(pendulum_angle, 2 * np.pi))
+
+        return motor_angle, pendulum_angle
+
+    def __run_checks(self, motor_angle: float, pendulum_angle: float):
+        if self.__is_motor_out_of_bounds(motor_angle):
+            raise ValueError("Motor is out of bounds")
+
+        if self.__has_pendulum_fallen(pendulum_angle):
+            raise ValueError("Pendulum has fallen")
+
+    def __has_pendulum_fallen(self, pendulum_angle):
+        return np.abs(pendulum_angle - self.__pendulum_setpoint) > self.__pendulum_angle_threshold
+
+    def __is_motor_out_of_bounds(self, motor_angle):
+        return np.abs(motor_angle) > self.__motor_max_number_rev * 2 * np.pi

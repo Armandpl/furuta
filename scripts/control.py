@@ -1,154 +1,131 @@
-import matplotlib.pyplot as plt
+import time
+from pathlib import Path
+
+import crocoddyl
 import numpy as np
 
-from furuta.controls.controllers import Controller
+from furuta.controls.controllers import SwingUpController
+from furuta.controls.filters import VelocityFilter
 from furuta.controls.utils import read_parameters_file
-from furuta.robot import Robot
+from furuta.logger import Logger
+from furuta.robot import Robot, RobotModel
+from furuta.viewer import RobotViewer
 
 PARAMETERS_PATH = "scripts/configs/control/parameters.json"
-
+LOG_DIR = Path("../logs/XP/swing_up")
 DEVICE = "/dev/ttyACM0"
 
+# Init robot
+robot = Robot(DEVICE)
 
-class Data:
-    def __init__(self):
-        self.actions = []
-        self.motor_angles = []
-        self.pendulum_angles = []
+# Read parameters
+parameters = read_parameters_file(PARAMETERS_PATH)["swing_up_controller"]
 
-    def log_action(self, action):
-        self.actions.append(action)
+# Time constants
+t_final = parameters["t_final"]  # MPC Time Horizon (s)
+control_freq = parameters["control_frequency"]  # Hz
+time_step = 1 / control_freq  # s
 
-    def log_motor_angle(self, angle):
-        self.motor_angles.append(angle)
+# Robot
+robot_model = RobotModel.robot
 
-    def log_pendulum_angle(self, angle):
-        self.pendulum_angles.append(angle)
+# Initial state
+init_state = np.zeros((robot_model.model.nq + robot_model.model.nv,))  # Down
 
-    def plot(self):
-        # plot actions
-        plt.figure(1)
-        plt.plot(self.actions)
-        plt.title("Actions Over Time")
-        plt.xlabel("Time")
-        plt.ylabel("Action Value")
-        plt.grid(True)
+# Desired State
+x_ref = np.array([0.0, np.pi, 0.0, 0.0])  # Up
 
-        # plot motor angles
-        plt.figure(2)
-        plt.plot(np.rad2deg(self.motor_angles))
-        plt.title("Motor Angles Over Time")
-        plt.xlabel("Time")
-        plt.ylabel("Motor Angle (in deg)")
-        plt.grid(True)
+# Create the controller
+controller = SwingUpController(robot_model, parameters, x_ref)
 
-        # plot pendulum angles
-        plt.figure(3)
-        plt.plot(np.rad2deg(self.pendulum_angles))
-        plt.title("Pendulum Angles Over Time")
-        plt.xlabel("Time")
-        plt.ylabel("Pendulum Angle (in deg)")
-        plt.grid(True)
+# Create the data logger
+logger = Logger()
 
-        plt.show()
+# Solve the OCP a first time to get the warm start
+controller.compute_command(init_state)
 
+# # Create the robot viewer
+# robot_viewer = RobotViewer(robot_model)
 
-class SafeRobotWrapper:
-    def __init__(self, robot: Robot):
-        self.robot = robot
-        self.__motor_max_number_rev = 0.5
-        self.__pendulum_angle_threshold = np.deg2rad(60)
-        self.__pendulum_setpoint = np.pi
+# # Display the solution
+# robot_viewer.animate(np.arange(0, t_final, time_step), controller.solver.xs.tolist())
+crocoddyl.plotOCSolution(controller.solver.xs, controller.solver.us)
 
-    def reset_encoders(self):
-        self.robot.reset_encoders()
+motor_speed_filter = VelocityFilter(2, 30.0, control_freq, 0.0)
+pendulum_speed_filter = VelocityFilter(2, 49.0, control_freq, 0.0)
 
-    def close(self):
-        self.robot.close()
+# Warm start
+x_ws = controller.solver.xs
+u_ws = controller.solver.us
 
-    def step(self, action):
-        # Perform the action
-        motor_angle, pendulum_angle = self.robot.step(action)
+# Wait for user input to start the control loop
+input("Go?")
 
-        # Run safety checks
-        self.__run_checks(motor_angle, np.mod(pendulum_angle, 2 * np.pi))
+# Reset encoders
+robot.reset_encoders()
 
-        return motor_angle, pendulum_angle
+# Get the initial motor and pendulum angles
+motor_angle, pendulum_angle, init_timestamp, action = robot.step(0.0, 0.0)
 
-    def __run_checks(self, motor_angle: float, pendulum_angle: float):
-        if self.__is_motor_out_of_bounds(motor_angle):
-            raise ValueError("Motor is out of bounds")
+logger.update(
+    time=0.0,
+    control=0.0,
+    state=np.array([motor_angle, pendulum_angle, 0.0, 0.0]),
+    unfiltered_speed=np.array([0.0, 0.0]),
+    desired_state=init_state,
+    elapsed_time=0.0,
+)
 
-        if self.__has_pendulum_fallen(pendulum_angle):
-            raise ValueError("Pendulum has fallen")
+timestamp = 0.0
+tic = time.time()
+# Control loop
+# f = 1.5
+while timestamp < 3.0:
+    controller.compute_command(logger.states[-1], 3, x_ws, u_ws)
+    desired_state = controller.get_next_desired_state()
+    # desired_state = x_ws[i]
+    desired_motor_position = desired_state[0]
+    desired_motor_velocity = desired_state[2]
+    # desired_motor_position = 2 * np.sin(2 * np.pi * timestamp * f)
+    # desired_motor_velocity = 2 * np.cos(2 * np.pi * timestamp * f) * 2 * np.pi * f
+    # desired_motor_position = np.pi
+    # desired_motor_velocity = 0.0
+    # desired_state = np.array([desired_motor_position, 0.0, desired_motor_velocity, 0.0])
 
-    def __has_pendulum_fallen(self, pendulum_angle):
-        return np.abs(pendulum_angle - self.__pendulum_setpoint) > self.__pendulum_angle_threshold
+    toc = time.time()
+    time.sleep(max(0.0, time_step - (toc - tic)))
+    tic = time.time()
 
-    def __is_motor_out_of_bounds(self, motor_angle):
-        return np.abs(motor_angle) > self.__motor_max_number_rev * 2 * np.pi
+    # Call the step function and get the motor and pendulum angles
+    try:
+        motor_angle, pendulum_angle, timestamp, action = robot.step(
+            desired_motor_position, desired_motor_velocity
+        )
+        timestamp = timestamp - init_timestamp
+    except ValueError as error_message:
+        print(error_message)
+        break
+    dt = timestamp - logger.times[-1]
+    unfiltered_motor_speed = (motor_angle - logger.states[-1][0]) / dt
+    unfiltered_pendulum_speed = (pendulum_angle - logger.states[-1][1]) / dt
+    motor_speed = motor_speed_filter(unfiltered_motor_speed)
+    pendulum_speed = pendulum_speed_filter(unfiltered_pendulum_speed)
 
+    x_ws, u_ws = controller.get_warm_start()
 
-def main():
-    # Read parameters from the .json file, angles are in degrees
-    parameters = read_parameters_file(PARAMETERS_PATH)
+    # Log data
+    logger.update(
+        time=timestamp,
+        control=action,
+        state=np.array([motor_angle, pendulum_angle, motor_speed, pendulum_speed]),
+        unfiltered_speed=np.array([unfiltered_motor_speed, unfiltered_pendulum_speed]),
+        desired_state=desired_state,
+        elapsed_time=dt,
+    )
 
-    # Init safe robot
-    robot = SafeRobotWrapper(Robot(DEVICE))
+# Close the serial connection
+robot.close()
 
-    # Init data logger
-    data = Data()
-
-    # Init pendulum controller
-    pendulum_controller = Controller.build_controller(parameters["pendulum_controller"])
-
-    # Init motor controller
-    motor_controller = Controller.build_controller(parameters["motor_controller"])
-
-    # Reset encoders
-    robot.reset_encoders()
-
-    # Wait for user input to start the control loop
-    input("Encoders reset, lift the pendulum and press enter to start the control loop.")
-
-    # Get the initial motor and pendulum angles
-    motor_angle, pendulum_angle = robot.step(0)
-
-    # Control loop
-    while True:
-        # Init action
-        action = 0
-
-        # Add the motor command from pendulum controller
-        action -= pendulum_controller.compute_command(pendulum_angle)
-
-        # Add the motor command from motor controller
-        action -= motor_controller.compute_command(motor_angle)
-
-        # Clip the command between -1 and 1
-        action = np.clip(action, -1, 1)
-
-        # Call the step function and get the motor and pendulum angles
-        try:
-            motor_angle, pendulum_angle = robot.step(action)
-        except ValueError as error_message:
-            print(error_message)
-            break
-
-        # Take the modulus of the pendulum angle between 0 and 2pi
-        pendulum_angle = np.mod(pendulum_angle, 2 * np.pi)
-
-        # Log data
-        data.log_action(action)
-        data.log_motor_angle(motor_angle)
-        data.log_pendulum_angle(pendulum_angle)
-
-    # Close the serial connection
-    robot.close()
-
-    # Plot data
-    data.plot()
-
-
-if __name__ == "__main__":
-    main()
+# Save log and plot
+logger.save(LOG_DIR)
+logger.plot()
