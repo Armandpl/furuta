@@ -31,9 +31,9 @@ sb3-contrib = {git = "https://github.com/Stable-Baselines-Team/stable-baselines3
 pytest = "^7.4.4"
 pin = "^2.7.0"
 crocoddyl = "^2.0.2"
-panda3d-viewer = "^0.4.1"
 cmeel-mim-solvers = "^0.0.4"
 onshape-to-robot = "^0.3.26"
+meshcat = {git = "https://github.com/meshcat-dev/meshcat-python"}
 
 [build-system]
 requires = ["poetry-core"]
