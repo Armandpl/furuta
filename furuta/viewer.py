@@ -3,8 +3,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import pinocchio as pin
-from panda3d_viewer import Viewer
-from pinocchio.visualize.panda3d_visualizer import Panda3dVisualizer
+from pinocchio.visualize.meshcat_visualizer import MeshcatVisualizer
 
 from furuta.utils import ALPHA, THETA
 
@@ -38,18 +37,19 @@ class AbstractViewer(ABC):
 class Viewer3D(AbstractViewer):
     def __init__(cls, robot: pin.RobotWrapper = None):
         cls.robot = robot
-        cls.viewer = Viewer()
-        # Attach the robot to the viewer scene
-        cls.robot.setVisualizer(Panda3dVisualizer())
-        cls.robot.initViewer(viewer=cls.viewer)
-        cls.robot.loadViewerModel(group_name=cls.robot.model.name)
+        cls.viewer = MeshcatVisualizer(robot.model, robot.collision_model, robot.visual_model)
+        cls.viewer.initViewer()
+        cls.viewer.loadViewerModel(rootNodeName=cls.robot.model.name)
+        cls.viewer.setCameraTarget([0.0, 0.0, 0.15])
+        cls.viewer.setCameraPosition([0.4, 0.0, 0.2])
+        cls.robot.setVisualizer(cls.viewer)
 
     def display(cls, state: np.ndarray) -> np.ndarray:
-        cls.robot.display(state)
-        return cls.viewer.get_screenshot(requested_format="RGB")
+        cls.viewer.display(state)
+        return cls.viewer.captureImage()
 
     def close(cls):
-        cls.viewer.stop()
+        cls.viewer.clean()
 
 
 class Viewer2D(AbstractViewer):
