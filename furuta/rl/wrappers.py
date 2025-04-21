@@ -10,7 +10,8 @@ import wandb
 from gymnasium.spaces import Box
 
 from furuta.logger import SimpleLogger
-from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT, State
+from furuta.state import Signal, State
+from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT
 
 
 class GentlyTerminating(gym.Wrapper):
@@ -85,10 +86,10 @@ class MCAPLogger(gym.Wrapper):
             time_to_log = time.time_ns()
 
         state = State(
-            motor_angle=self.unwrapped._state[THETA],
-            pendulum_angle=self.unwrapped._state[ALPHA],
-            motor_angle_velocity=self.unwrapped._state[THETA_DOT],
-            pendulum_angle_velocity=self.unwrapped._state[ALPHA_DOT],
+            motor_position=Signal(measured=self.unwrapped._state[THETA]),
+            pendulum_position=Signal(measured=self.unwrapped._state[ALPHA]),
+            motor_velocity=Signal(measured=self.unwrapped._state[THETA_DOT]),
+            pendulum_velocity=Signal(measured=self.unwrapped._state[ALPHA_DOT]),
             reward=reward,
             action=float(action[0]),
         )
@@ -116,7 +117,6 @@ class MCAPLogger(gym.Wrapper):
         if self.logger is None or self.episodic:
             # instantiate a new MCAP logger
             self.logger = SimpleLogger(self.log_dir / fname)
-            self.logger.start()
 
         # TODO add metadata?
         # date, control frequency, wandb run id, sim parameters, robot parameters, etc.
