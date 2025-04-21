@@ -1,10 +1,18 @@
 syntax = "proto3";
 
 message PendulumState {
-  float motor_angle = 1;
-  float pendulum_angle = 2;
-  float motor_angle_velocity = 3;
-  float pendulum_angle_velocity = 4;
+  Signal motor_position = 1;
+  Signal motor_velocity = 2;
+  Signal pendulum_position = 3;
+  Signal pendulum_velocity = 4;
   float reward = 5;
   float action = 6;
+  float timing = 7;
+}
+
+message Signal {
+  float desired = 1;
+  float measured = 2;
+  float filtered = 3;
+  float simulated = 4;
 }
