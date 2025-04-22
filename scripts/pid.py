@@ -102,7 +102,7 @@ if __name__ == "__main__":
                     measured=measured_motor_velocity, filtered=filtered_motor_velocity
                 ),
                 pendulum_velocity=Signal(
-                    measured=measured_motor_velocity, filtered=filtered_pendulum_velocity
+                    measured=measured_pendulum_velocity, filtered=filtered_pendulum_velocity
                 ),
                 action=action,
                 timing=toc - tic,
