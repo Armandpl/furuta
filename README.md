@@ -16,7 +16,7 @@ In this repository you will find everything you need to build and train a rotary
 ## Getting Started
 1. [Get the supplies and follow the hardware instructions](https://github.com/Armandpl/furuta/tree/master/robot/hardware)
 2. Run `sudo dmesg | grep tty` in terminal to find which port is used for the device
-3. Install dependencies withh `poetry install`
+3. Install dependencies with `poetry install`
 4. run `python tests/interactive_robot_self_test.py`
 
 If you have any question feel free to open an issue or DM me [@armand_dpl](twitter.com/armand_dpl).
