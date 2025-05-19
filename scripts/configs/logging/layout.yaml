@@ -1,0 +1,60 @@
+name: Pendulum Layout
+tabs:
+  - name: State
+    shape: [2, 2]
+    plots:
+      - name: Motor Position
+        unit: rad
+        variables:
+          - motor_position.desired
+          - motor_position.measured
+          - motor_position.filtered
+          - motor_position.simulated
+
+      - name: Pendulum Position
+        unit: rad
+        variables:
+          - pendulum_position.desired
+          - pendulum_position.measured
+          - pendulum_position.filtered
+          - pendulum_position.simulated
+
+      - name: Motor Velocity
+        unit: rad/s
+        variables:
+          - motor_velocity.desired
+          - motor_velocity.measured
+          - motor_velocity.filtered
+          - motor_velocity.simulated
+
+      - name: Pendulum Velocity
+        unit: rad/s
+        variables:
+          - pendulum_velocity.desired
+          - pendulum_velocity.measured
+          - pendulum_velocity.filtered
+          - pendulum_velocity.simulated
+
+  - name: Control
+    shape: [1, 1]
+    plots:
+      - name: Action
+        unit: N.m
+        variables:
+          - action
+
+  - name: Timing
+    shape: [1, 1]
+    plots:
+      - name: Solver Compute Time
+        unit: s
+        variables:
+          - timing
+
+  - name: Reward
+    shape: [1, 1]
+    plots:
+      - name: Reward
+        unit: None
+        variables:
+          - reward

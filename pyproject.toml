@@ -11,7 +11,7 @@ python = ">=3.9,<4.0"
 gymnasium = "^0.29.1"
 pyserial = "^3.5"
 simple-pid = "^2.0.0"
-mcap-protobuf-support = "^0.4.1"
+mcap-protobuf-support = ">=0.4.1"
 scipy = "^1.11.4"
 pygame = "^2.5.2"
 
@@ -29,6 +29,11 @@ sbx-rl = "^0.10.0"
 jax-metal = {version = "^0.0.5", platform = "darwin"}
 sb3-contrib = {git = "https://github.com/Stable-Baselines-Team/stable-baselines3-contrib"}
 pytest = "^7.4.4"
+pin = "^2.7.0"
+crocoddyl = "^2.0.2"
+cmeel-mim-solvers = "^0.0.4"
+onshape-to-robot = "^0.3.26"
+meshcat = {git = "https://github.com/meshcat-dev/meshcat-python"}
 
 [build-system]
 requires = ["poetry-core"]

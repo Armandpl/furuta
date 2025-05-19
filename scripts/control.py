@@ -5,7 +5,7 @@ from furuta.controls.controllers import Controller
 from furuta.controls.utils import read_parameters_file
 from furuta.robot import Robot
 
-PARAMETERS_PATH = "scripts/configs/parameters.json"
+PARAMETERS_PATH = "scripts/configs/control/parameters.json"
 
 DEVICE = "/dev/ttyACM0"
 

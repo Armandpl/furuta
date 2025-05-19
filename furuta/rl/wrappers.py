@@ -6,11 +6,11 @@ from typing import Optional, Union
 import gymnasium as gym
 import hydra
 import numpy as np
-from gymnasium.spaces import Box
-from mcap_protobuf.writer import Writer
-
 import wandb
-from furuta.logging.protobuf.pendulum_state_pb2 import PendulumState
+from gymnasium.spaces import Box
+
+from furuta.logger import SimpleLogger
+from furuta.state import Signal, State
 from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT
 
 
@@ -72,7 +72,7 @@ class MCAPLogger(gym.Wrapper):
         self.use_sim_time = use_sim_time
 
         self.episodes = 0
-        self.mcap_writer = None
+        self.logger = None
         self.episodic = episodic
 
     def step(self, action):
@@ -85,19 +85,15 @@ class MCAPLogger(gym.Wrapper):
         else:
             time_to_log = time.time_ns()
 
-        self.mcap_writer.write_message(
-            topic="/pendulum_state",
-            message=PendulumState(
-                motor_angle=self.unwrapped._state[THETA],
-                pendulum_angle=self.unwrapped._state[ALPHA],
-                motor_angle_velocity=self.unwrapped._state[THETA_DOT],
-                pendulum_angle_velocity=self.unwrapped._state[ALPHA_DOT],
-                reward=reward,
-                action=float(action[0]),
-            ),
-            log_time=time_to_log,
-            publish_time=time_to_log,
+        state = State(
+            motor_position=Signal(measured=self.unwrapped._state[THETA]),
+            pendulum_position=Signal(measured=self.unwrapped._state[ALPHA]),
+            motor_velocity=Signal(measured=self.unwrapped._state[THETA_DOT]),
+            pendulum_velocity=Signal(measured=self.unwrapped._state[ALPHA_DOT]),
+            reward=reward,
+            action=float(action[0]),
         )
+        self.logger.update(time_to_log, state)
 
         return observation, reward, terminated, truncated, info
 
@@ -112,15 +108,15 @@ class MCAPLogger(gym.Wrapper):
 
         if self.episodic:
             # close previous log file
-            self.close_mcap_writer()
+            if self.logger is not None:
+                self.logger.stop()
             fname = f"ep{self.episodes}_{time.strftime('%Y%m%d-%H%M%S')}.mcap"
         else:
             fname = f"{time.strftime('%Y%m%d-%H%M%S')}.mcap"
 
-        if self.mcap_writer is None or self.episodic:
-            # instantiate a new MCAP writer
-            self.output_file = open(self.log_dir / fname, "wb")
-            self.mcap_writer = Writer(self.output_file)
+        if self.logger is None or self.episodic:
+            # instantiate a new MCAP logger
+            self.logger = SimpleLogger(self.log_dir / fname)
 
         # TODO add metadata?
         # date, control frequency, wandb run id, sim parameters, robot parameters, etc.
@@ -133,13 +129,8 @@ class MCAPLogger(gym.Wrapper):
         return self.env.reset(seed=seed, options=options)
 
     def close(self):
-        self.close_mcap_writer()
+        self.logger.stop()
         return self.env.close()
-
-    def close_mcap_writer(self):
-        if self.mcap_writer is not None:
-            self.mcap_writer.finish()
-            self.output_file.close()
 
 
 class ControlFrequency(gym.Wrapper):

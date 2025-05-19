@@ -14,16 +14,12 @@ In this repository you will find everything you need to build and train a rotary
 - We wanted to learn about RL. Balancing a pendulum is kind of the "hello world" of the field, it seemed like a good starting point.
 
 ## Getting Started
-1. [Get the supplies and follow the hardware instructions](https://github.com/Armandpl/furuta/tree/master/hardware)
-2. [Follow the software instructions](https://github.com/Armandpl/furuta/tree/master/software)
-3. Deploy pre-trained models, run experiments and train the robot
+1. [Get the supplies and follow the hardware instructions](https://github.com/Armandpl/furuta/tree/master/robot/hardware)
+2. Run `sudo dmesg | grep tty` in terminal to find which port is used for the device
+3. Install dependencies withh `poetry install`
+4. run `python tests/interactive_robot_self_test.py`
 
 If you have any question feel free to open an issue or DM me [@armand_dpl](twitter.com/armand_dpl).
-
-## Usage
-1. Plug-in the robot
-2. Run `sudo dmesg | grep tty` in terminal to find which port is used for the device
-3. run `python tests/interactive_robot_self_test.py`
 
 ## MLOps
 During this project we leveraged [Weights and Biases](https://wandb.ai/site) MLOps tools to make our life easier. You can find our experiments, pre-trained models and reports [on our dashboard](https://wandb.ai/armandpl/furuta). You can also read more about [Training Reproducible Robots with W&B here](https://wandb.ai/armandpl/furuta/reports/Training-Reproducible-Robots-with-W-B--VmlldzoxMTY5NTM5).

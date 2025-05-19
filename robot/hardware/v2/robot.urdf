@@ -1,0 +1,73 @@
+<robot name="penduli">
+
+    <link name="base_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 -0 0" />
+            <geometry>
+                <mesh filename="package:///base_link_visual.stl"/>
+            </geometry>
+            <material name="base_link_material">
+                <color rgba="0.5 0.5 0.5 1.0"/>
+            </material>
+        </visual>
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0" />
+            <inertia ixx="0" ixy="0"  ixz="0" iyy="0" iyz="0" izz="0" />
+        </inertial>
+    </link>
+
+    <link name="arm">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 -0 0" />
+            <geometry>
+                <mesh filename="package:///arm_visual.stl"/>
+            </geometry>
+            <material name="arm_material">
+                <color rgba="0.58963322664900852388 0.62491998675642856931 0.60952065629253571188 1.0"/>
+            </material>
+        </visual>
+        <inertial>
+            <origin xyz="-0.012730712527184277066 8.0648459397815786313e-05 0.0056956449850268254381" rpy="0 0 0"/>
+            <mass value="0.053299999999999979339" />
+            <inertia ixx="8.550143844821094156e-06" ixy="6.7935725380056207714e-08"  ixz="-2.9080329526916306072e-07" iyy="4.0401626057957139141e-05" iyz="3.8704860075728421344e-08" izz="3.9415181227059578367e-05" />
+        </inertial>
+    </link>
+
+    <link name="pendulum">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 -0 0" />
+            <geometry>
+                <mesh filename="package:///pendulum_visual.stl"/>
+            </geometry>
+            <material name="pendulum_material">
+                <color rgba="0.7611953078174501508 0.87164997003168076528 0.9342409452864113284 1.0"/>
+            </material>
+        </visual>
+        <inertial>
+            <origin xyz="-3.9121175585088163197e-05 -0.057178101805359336784 0.04349266195473974056" rpy="0 0 0"/>
+            <mass value="0.045800000000000000433" />
+            <inertia ixx="0.00011055395208433741816" ixy="1.0796944809477561768e-07"  ixz="-8.9184870387859356917e-08" iyy="4.256725432755160721e-05" iyz="4.3210612137926957693e-05" izz="6.9795432247420085854e-05" />
+        </inertial>
+    </link>
+
+    <joint name="arm" type="revolute">
+
+        <origin xyz="0.0039999999999999723277 0 0.0091499999999999914735" rpy="1.57079632679489661923 0.0 1.57079632679489661923" />
+        <parent link="arm" />
+        <child link="pendulum" />
+        <axis xyz="0 0 1"/>
+        <limit effort="1" velocity="20" />
+        <joint_properties friction="0.0"/>
+    </joint>
+
+    <joint name="base_link" type="revolute">
+        <origin xyz="0.0 0.0 0.085" rpy="0.0 0.0 0.0" />
+        <parent link="base_link" />
+        <child link="arm" />
+        <axis xyz="0 0 1"/>
+        <limit effort="1" velocity="20" />
+        <joint_properties friction="0.0"/>
+    </joint>
+
+</robot>
