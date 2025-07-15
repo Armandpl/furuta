@@ -283,22 +283,6 @@ wheels = [
 ]
 
 [[package]]
-name = "cmeel-mim-solvers"
-version = "0.0.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cmeel" },
-    { name = "cmeel-boost" },
-    { name = "crocoddyl" },
-    { name = "proxsuite" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/58/38/130d1ad5cba8f9c4fea315ef9dae4df38562968f9d898a93f2ce33b3af40/cmeel_mim_solvers-0.0.4.tar.gz", hash = "sha256:82e52961f2ca8d6e34f092bcf1004b95279c2f9092daa7767d7ea5cb8eeefa5a", size = 912756, upload-time = "2024-04-12T09:10:41.663Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/97/24/a995fab04f62917273a73131406fdbb36729b593b4b35087e70ffc709b0e/cmeel_mim_solvers-0.0.4-0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:2162293cecdf44c60cccadb49d89793df0c5eebaba7735d61870ccc2e955a440", size = 540391, upload-time = "2024-04-12T09:10:30.569Z" },
-    { url = "https://files.pythonhosted.org/packages/b4/9c/e6b2eba9515bfe5ea67fcd7f4250075a2b3e988a0e67e110f1403154dbd8/cmeel_mim_solvers-0.0.4-0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:bba3d3dcdc796b880b91f9f93b5b53be0d8883c88ab2852a3cda4b7595cb59cd", size = 607500, upload-time = "2024-04-12T09:10:32.715Z" },
-]
-
-[[package]]
 name = "cmeel-octomap"
 version = "1.10.0"
 source = { registry = "https://pypi.org/simple" }
@@ -780,7 +764,6 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "cmeel-mim-solvers" },
     { name = "crocoddyl" },
     { name = "hydra-core" },
     { name = "ipykernel" },
@@ -802,7 +785,6 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cmeel-mim-solvers", marker = "extra == 'dev'", specifier = ">=0.0.4" },
     { name = "crocoddyl", marker = "extra == 'dev'", specifier = ">=2.0.2" },
     { name = "gymnasium", specifier = ">=0.29.1" },
     { name = "hydra-core", marker = "extra == 'dev'", specifier = ">=1.3.2" },
@@ -1154,12 +1136,12 @@ name = "jax-metal"
 version = "0.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "jax", version = "0.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
-    { name = "jax", version = "0.6.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
-    { name = "jaxlib", version = "0.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
-    { name = "jaxlib", version = "0.6.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
-    { name = "six" },
-    { name = "wheel" },
+    { name = "jax", version = "0.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "jax", version = "0.6.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' and sys_platform == 'darwin'" },
+    { name = "jaxlib", version = "0.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13' and sys_platform == 'darwin'" },
+    { name = "jaxlib", version = "0.6.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13' and sys_platform == 'darwin'" },
+    { name = "six", marker = "sys_platform == 'darwin'" },
+    { name = "wheel", marker = "sys_platform == 'darwin'" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/87/ec/9bb7f7f0ffd06c3fb89813126b2f698636ac7a4263ed7bdd1ff7d7c94f8f/jax_metal-0.1.1-py3-none-macosx_10_14_x86_64.whl", hash = "sha256:d918a78443cb808c9491a24a5c2a94cc4eabfd0461d5bcda29a8f332dfbe9b7e", size = 54662235, upload-time = "2024-10-08T16:57:30.128Z" },
@@ -2222,39 +2204,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/76/a1/7a5a94032c83375e4fe7e7f56e3976ea6ac90c5e85fac8576409e25c39c3/protobuf-6.31.1-cp39-abi3-manylinux2014_aarch64.whl", hash = "sha256:a40fc12b84c154884d7d4c4ebd675d5b3b5283e155f324049ae396b95ddebc39", size = 322115, upload-time = "2025-05-28T19:25:47.128Z" },
     { url = "https://files.pythonhosted.org/packages/fa/b1/b59d405d64d31999244643d88c45c8241c58f17cc887e73bcb90602327f8/protobuf-6.31.1-cp39-abi3-manylinux2014_x86_64.whl", hash = "sha256:4ee898bf66f7a8b0bd21bce523814e6fbd8c6add948045ce958b73af7e8878c6", size = 321070, upload-time = "2025-05-28T19:25:50.036Z" },
     { url = "https://files.pythonhosted.org/packages/f7/af/ab3c51ab7507a7325e98ffe691d9495ee3d3aa5f589afad65ec920d39821/protobuf-6.31.1-py3-none-any.whl", hash = "sha256:720a6c7e6b77288b85063569baae8536671b39f15cc22037ec7045658d80489e", size = 168724, upload-time = "2025-05-28T19:25:53.926Z" },
-]
-
-[[package]]
-name = "proxsuite"
-version = "0.7.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cmeel" },
-    { name = "numpy" },
-    { name = "scipy" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/93/3e/b75687df9bddc404c7c34cca96157ba642c9f73450ea218a526b922a3037/proxsuite-0.7.2-0-cp311-cp311-macosx_13_0_x86_64.whl", hash = "sha256:ed973414ef98061962c8b1513f6a50d7ffdc651478bb453e18103a2021d20e4f", size = 1431725, upload-time = "2025-03-12T15:44:01.97Z" },
-    { url = "https://files.pythonhosted.org/packages/85/90/0d7722a9c85697ee876e660c96d9c6a7eea4cf457b9e4127ef07fdfcf9bf/proxsuite-0.7.2-0-cp311-cp311-macosx_14_0_arm64.whl", hash = "sha256:ec55c2c7569b739e12f3a4f23f13d0fb8d288fc2645584896554c4b667bc0cca", size = 607319, upload-time = "2025-03-12T15:44:03.529Z" },
-    { url = "https://files.pythonhosted.org/packages/63/b1/b802be4ce0886049078eac47328cadbdf71fc5aef50f864141fbb2b09a1e/proxsuite-0.7.2-0-cp311-cp311-manylinux_2_17_x86_64.whl", hash = "sha256:5bac1cf5cd9e22a3e9adc571d1c6fd93e988c7b763a207c36ea1e6e1ffe58a86", size = 1569101, upload-time = "2025-03-12T15:45:42.632Z" },
-    { url = "https://files.pythonhosted.org/packages/7f/6b/180c4bedcdbcbd833bfccd446cfada6d6cea5f65b6bab7224d52b1ab97d9/proxsuite-0.7.2-0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:e7c162d57dd6f1310e4648841a94356753696e6a44e781d8ab4b5ed632e463ae", size = 605742, upload-time = "2025-03-12T15:45:43.887Z" },
-    { url = "https://files.pythonhosted.org/packages/66/30/1c8903af2751a38aa19e0c2c3455078c0b4fec71d4957a4dd98bd411c559/proxsuite-0.7.2-0-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:e950453a9523d4473e5e01d91b03077f714b2986f0fb905bb163195f273ef39f", size = 1074685, upload-time = "2025-03-12T15:45:45.232Z" },
-    { url = "https://files.pythonhosted.org/packages/e6/7e/e57f01a279ac47c90d8cfcc97d30b1ce098505449b9bb61c9b0e0d7e8747/proxsuite-0.7.2-0-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:62b653e552e1e6e9728f1c3eba2182356c1dfd16c5ae055e54873650a7ea21a9", size = 3365467, upload-time = "2025-03-12T15:45:46.874Z" },
-    { url = "https://files.pythonhosted.org/packages/15/9e/6c5d29223e5f213bc12a9d39e0b3bffc541a8822f1988fa835343b1ef86f/proxsuite-0.7.2-0-cp311-cp311-win_amd64.whl", hash = "sha256:5fa2e504bf324a809e8866b5ddacc5c64710bfcaa5746ce331c4d2042218db6c", size = 7121777, upload-time = "2025-03-12T15:44:05.222Z" },
-    { url = "https://files.pythonhosted.org/packages/8a/e8/9396b795ff1eb41f3e2ba0397417440d8479783bb235af95a01892354709/proxsuite-0.7.2-0-cp312-cp312-macosx_13_0_x86_64.whl", hash = "sha256:59960b635c7f2e874b378fdf2fad07a094f1818cdffabddbf13e39ae61fa6a4e", size = 1434525, upload-time = "2025-03-12T15:44:06.688Z" },
-    { url = "https://files.pythonhosted.org/packages/a7/6a/824ec181fbf45d13b4521b34fd1cc3b96c9818e752ac72a361df80b9e94c/proxsuite-0.7.2-0-cp312-cp312-macosx_14_0_arm64.whl", hash = "sha256:2ec27beccd57ff21d53ace0eb8fbe002f5144e4845d93a93173eb9ff037401ad", size = 606437, upload-time = "2025-03-12T15:44:08.408Z" },
-    { url = "https://files.pythonhosted.org/packages/e7/e8/3704f4b9c4d785cc166bdb50fe2db47e8f76450c6386d94ef383f185cebc/proxsuite-0.7.2-0-cp312-cp312-manylinux_2_17_x86_64.whl", hash = "sha256:5c5c4f0e960328720c403bb2248696bab8ba96cf612344e0874bc0586eeeb894", size = 1565881, upload-time = "2025-03-12T15:45:48.57Z" },
-    { url = "https://files.pythonhosted.org/packages/95/87/f8fcf51a4ff1cba09ccfbebcbc8b0b483f42699cb94a4a8eb9e6ecb5fc5f/proxsuite-0.7.2-0-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:ccba984579f6e4b4a3db85e355bc06c51a42abfbbd3f75be38e7b06f83832cd1", size = 605135, upload-time = "2025-03-12T15:45:51.016Z" },
-    { url = "https://files.pythonhosted.org/packages/6f/b9/f31ef80e06095c05460832b73b57a25e338a68adc95f61b33e80ff13ecc9/proxsuite-0.7.2-0-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:80b5b6055c489074c74cec712c57016f7cf938a35234992139506d4046f9b80a", size = 1074058, upload-time = "2025-03-12T15:45:52.656Z" },
-    { url = "https://files.pythonhosted.org/packages/81/86/208cd334288c9cea1401acae1cc25a048b646b4e1c24dc6a4a63c18b01b3/proxsuite-0.7.2-0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:62d7226a2d44746b01a09b46644782393bb695fc7ab307e622bcad9ec853085b", size = 3364671, upload-time = "2025-03-12T15:45:54.356Z" },
-    { url = "https://files.pythonhosted.org/packages/2e/1a/8d8eddc7c88c3d5d8788a08963d1bf2d94cd7fa0372df5263ec1cb698f4a/proxsuite-0.7.2-0-cp312-cp312-win_amd64.whl", hash = "sha256:f16b58f528821c665bd2d461af68cb7330005ca5b7dc2b3b060aa5bd0646b3f6", size = 7128247, upload-time = "2025-03-12T15:44:09.995Z" },
-    { url = "https://files.pythonhosted.org/packages/83/aa/86d346b72439c78b4411a4754895ac0590c2a1e0c4e3672ea438a6c67cb4/proxsuite-0.7.2-0-cp313-cp313-macosx_13_0_x86_64.whl", hash = "sha256:48bdd6d7d2588320e8f5d32e035ba40391adc4a6f1bf35bb727748781fcda421", size = 1434565, upload-time = "2025-03-12T15:44:13.637Z" },
-    { url = "https://files.pythonhosted.org/packages/04/1d/d6b6d402f2ddf232fe0be220967eca75dc57d98ae7ca29600a489eac4e0e/proxsuite-0.7.2-0-cp313-cp313-macosx_14_0_arm64.whl", hash = "sha256:4ef37e5b9aca29d7b2debd2ea06a1b54b9990ad1ffe7cfae8f6037da44560257", size = 606439, upload-time = "2025-03-12T15:44:15.691Z" },
-    { url = "https://files.pythonhosted.org/packages/27/ea/6050672e84fa682c6c48edb6ad2511995681a51c5dd618a7870c90cc006c/proxsuite-0.7.2-0-cp313-cp313-manylinux_2_17_x86_64.whl", hash = "sha256:0a29464c3c0899b5de2b0b42bef23e2351fc71ad800d60a4f57bd90e0cd36567", size = 1565836, upload-time = "2025-03-12T15:45:55.95Z" },
-    { url = "https://files.pythonhosted.org/packages/b8/87/d69189d0df9de516112e07024ecbae8f8c707bd6bf0824dec2f083e8418d/proxsuite-0.7.2-0-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:7820edf20a2f7708c9260fd48e16c3663a4e71f0ba77368420be391163ee281c", size = 605071, upload-time = "2025-03-12T15:45:57.27Z" },
-    { url = "https://files.pythonhosted.org/packages/ba/bb/660648ebb7102cdf3629d1fa6576a5a3c529f8286066182bf21919748fdd/proxsuite-0.7.2-0-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:23edbe79875b53a7da0eff6ec2471b74772ce39cb93701dbbac3fabd23f77f48", size = 1074091, upload-time = "2025-03-12T15:45:58.532Z" },
-    { url = "https://files.pythonhosted.org/packages/ac/73/ae226e604be67d4ef1c4d1c92812b811e7c4b1326fe14efc81264e93c527/proxsuite-0.7.2-0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:6622176c01b959533d55ebeb2e871f5d984f76b0867314ccc6b7993e37c8797b", size = 3364612, upload-time = "2025-03-12T15:46:00.02Z" },
-    { url = "https://files.pythonhosted.org/packages/84/12/4564ffa8770c8ff33cb7c0242ba29bee6364318add6c4764c6c6aaaf1a12/proxsuite-0.7.2-0-cp313-cp313-win_amd64.whl", hash = "sha256:644ce1d255539ebe524f4be8c5f2d236a20ff01926b21759eb4fb4bbe3265518", size = 7129890, upload-time = "2025-03-12T15:44:17.165Z" },
 ]
 
 [[package]]

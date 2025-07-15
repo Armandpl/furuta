@@ -32,7 +32,6 @@ dev = [
     "pytest>=7.4.4",
     "pin>=2.7.0",
     "crocoddyl>=2.0.2",
-    "cmeel-mim-solvers>=0.0.4",
     "onshape-to-robot>=0.3.26",
     "meshcat",
 ]
