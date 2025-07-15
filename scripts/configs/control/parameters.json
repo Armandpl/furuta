@@ -13,12 +13,5 @@
         "Ki": 0.001,
         "Kd": 0.0,
         "setpoint": 0.0
-    },
-    "swing_up_controller":{
-        "control_frequency": 300,
-        "t_final": 0.5,
-        "u_lim": 0.1,
-        "constraints_type": "NONE",
-        "solver_type": "SQP"
     }
 }

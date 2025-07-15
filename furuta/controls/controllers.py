@@ -2,7 +2,6 @@ import typing as tp
 from abc import ABC, abstractmethod
 
 import crocoddyl
-import mim_solvers
 import numpy as np
 import pinocchio as pin
 from simple_pid import PID
@@ -38,9 +37,7 @@ class PIDController(Controller):
 
 class SwingUpController(Controller):
     class FurutaActuationModel(crocoddyl.ActuationModelAbstract):
-        # TODO : Implement in c++ if too slow
-        def __init__(self, state):
-            nu = 1  # Control dimension
+        def __init__(self, state, nu):
             crocoddyl.ActuationModelAbstract.__init__(self, state, nu=nu)
 
         def calc(self, data, x, u):
@@ -54,18 +51,23 @@ class SwingUpController(Controller):
             data.dtau_du[0] = 1
             data.dtau_du[1] = 0
 
-    def __init__(self, robot: pin.RobotWrapper, parameters: tp.Dict, xref: np.ndarray):
-
-        # Read parameters
-        control_freq: float = parameters["control_frequency"]
-        t_final: float = parameters["t_final"]
-        self.u_lim: float = parameters["u_lim"]
-        constraints_type: str = parameters["constraints_type"]
-        self.solver_type: str = parameters["solver_type"]
+    def __init__(
+        self,
+        robot: pin.RobotWrapper,
+        x_target: np.ndarray,
+        control_freq: float = 100.0,
+        t_final: float = 0.5,
+        u_lim: float = 0.1,
+        Q: np.ndarray = np.array([10, 50, 1, 1]),
+        R: np.ndarray = np.array([0.1]),
+        S: np.ndarray = np.array([1.0]),
+        M: int = 10,
+    ):
+        self.u_lim = u_lim
 
         # Time variables
         dt = 1 / control_freq  # Time step
-        self.T = int(t_final * control_freq)
+        self.N = int(t_final * control_freq)
 
         # Instantiate robot as a pinocchio RobotWrapper
         self.robot = robot
@@ -74,98 +76,73 @@ class SwingUpController(Controller):
         state = crocoddyl.StateMultibody(robot.model)
 
         # Actuation model
-        actuationModel = self.FurutaActuationModel(state)
+        nu = 1
+        actuation = self.FurutaActuationModel(state, nu)
 
-        # State Residual
-        stateResidual = crocoddyl.ResidualModelState(state, xref=xref, nu=actuationModel.nu)
-        stateCostModel = crocoddyl.CostModelResidual(state, stateResidual)
+        # State Cost
+        state_residual = crocoddyl.ResidualModelState(state, xref=x_target, nu=nu)
+        state_residual_activation = crocoddyl.ActivationModelWeightedQuad(Q)
+        state_cost = crocoddyl.CostModelResidual(state, state_residual_activation, state_residual)
 
-        # Control Residual
-        controlResidual = crocoddyl.ResidualModelControl(state, nu=actuationModel.nu)
-        if constraints_type == "SOFT":
-            bounds = crocoddyl.ActivationBounds(np.array([self.u_lim]), np.array([self.u_lim]))
-            activation = crocoddyl.ActivationModelQuadraticBarrier(bounds)
-            controlCost = crocoddyl.CostModelResidual(
-                state, residual=controlResidual, activation=activation
+        # Control Cost
+        control_residual = crocoddyl.ResidualModelControl(state, nu=nu)
+        control_residual_activation = crocoddyl.ActivationModelWeightedQuad(R)
+        control_cost = crocoddyl.CostModelResidual(
+            state, control_residual_activation, control_residual
+        )
+
+        # Control rate cost
+        self.control_rate_residual = crocoddyl.ResidualModelControl(state, uref=np.array([0.0]))
+        control_rate_residual_activation = crocoddyl.ActivationModelWeightedQuad(S)
+        control_rate_cost = crocoddyl.CostModelResidual(
+            state, control_rate_residual_activation, self.control_rate_residual
+        )
+
+        self.running_models = []
+        for k in range(self.N):
+            running_cost = crocoddyl.CostModelSum(state, nu=nu)
+            running_cost.addCost("state_cost", cost=state_cost, weight=1.0)
+            running_cost.addCost("control_cost", cost=control_cost, weight=1.0)
+            running_cost.addCost("control_rate_cost", cost=control_rate_cost, weight=np.exp(M - k))
+
+            running_model = crocoddyl.IntegratedActionModelEuler(
+                crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, running_cost),
+                dt,
             )
-        else:
-            controlCost = crocoddyl.CostModelResidual(state, residual=controlResidual)
-
-        # Constraints
-        constraintManager = crocoddyl.ConstraintModelManager(state, nu=actuationModel.nu)
-        if constraints_type == "HARD":
-            constraint = crocoddyl.ConstraintModelResidual(
-                state,
-                controlResidual,
-                np.array([-self.u_lim, -self.u_lim]),
-                np.array([self.u_lim, self.u_lim]),
-            )
-            constraintManager.addConstraint("control_constraint", constraint)
-
-        # Running cost
-        runningCostModel = crocoddyl.CostModelSum(state, nu=actuationModel.nu)
-        runningCostModel.addCost("state_cost", cost=stateCostModel, weight=1e-7)
-        runningCostModel.addCost("control_cost", cost=controlCost, weight=1e-2)
+            self.running_models.append(running_model)
 
         # Terminal cost
-        terminalCostModel = crocoddyl.CostModelSum(state, nu=actuationModel.nu)
-        terminalCostModel.addCost("state_cost", cost=stateCostModel, weight=self.T)
+        terminal_cost = crocoddyl.CostModelSum(state, nu=nu)
+        terminal_cost.addCost("state_cost", cost=state_cost, weight=self.N)
 
-        # IAM
-        self.runningModel = crocoddyl.IntegratedActionModelEuler(
-            crocoddyl.DifferentialActionModelFreeFwdDynamics(
-                state, actuationModel, runningCostModel, constraintManager
-            ),
-            dt,
-        )
-        self.terminalModel = crocoddyl.IntegratedActionModelEuler(
-            crocoddyl.DifferentialActionModelFreeFwdDynamics(
-                state, actuationModel, terminalCostModel
-            ),
+        self.terminal_model = crocoddyl.IntegratedActionModelEuler(
+            crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, terminal_cost),
             0.0,
         )
 
-        # Initial state
-        q0 = np.zeros((state.nq + state.nv,))
-
-        # Create the shooting problem
-        self.create_problem(q0)
-
     def create_problem(self, state: np.ndarray):
-        self.problem = crocoddyl.ShootingProblem(
-            state, [self.runningModel] * self.T, self.terminalModel
-        )
+        self.problem = crocoddyl.ShootingProblem(state, self.running_models, self.terminal_model)
 
-    def get_warm_start(self) -> tp.Tuple[np.ndarray, np.ndarray]:
-        xs = self.solver.xs
-        us = self.solver.us
-        xs[:-1] = xs[1:]
-        xs[-1] = self.solver.xs[-1]
-        us[:-1] = us[1:]
-        us[-1] = self.solver.us[-1]
-        return xs, us
+    def init_solver(self):
+        self.solver = crocoddyl.SolverFDDP(self.problem)
+        callbacks = []
+        callbacks.append(crocoddyl.CallbackVerbose())
+        self.solver.setCallbacks(callbacks)
 
-    def compute_command(
-        self, state: np.ndarray, max_iter: float = 500, x_ws=[], u_ws=[], callback=True
-    ) -> float:
+    def compute_command(self, state: np.ndarray, max_iter: int = 500, x_ws=[], u_ws=[]) -> float:
         self.create_problem(state)
-        if self.solver_type == "SQP":
-            self.solver = mim_solvers.SolverSQP(self.problem)
-        elif self.solver_type == "FDDP":
-            self.solver = crocoddyl.SolverFDDP(self.problem)
-        else:
-            raise ValueError(f"Invalid solver type: {self.solver_type}")
-        if callback:
-            callbacks = []
-            callbacks.append(crocoddyl.CallbackVerbose())
-            self.solver.setCallbacks(callbacks)
+        self.init_solver()
         self.solver.solve(x_ws, u_ws, max_iter, False, 1e-5)
-        # Clamp the control signal
         u = np.clip(self.solver.us[0][0], -self.u_lim, self.u_lim)
         return u
 
     def get_trajectoy(self) -> np.ndarray:
-        return self.solver.xs
+        return self.solver.xs.tolist()
 
     def get_command(self) -> np.ndarray:
-        return self.solver.us
+        return self.solver.us.tolist()
+
+    def get_warm_start(self) -> tp.Tuple[np.ndarray, np.ndarray]:
+        x_ws = self.solver.xs.tolist()[1:] + [self.solver.xs[-1]]
+        u_ws = self.solver.us.tolist()[1:] + [self.solver.us[-1]]
+        return x_ws, u_ws

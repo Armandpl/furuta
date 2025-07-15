@@ -9,12 +9,13 @@ import serial
 
 class RobotModel:
     def __init__(self):
-        self.robot = None
         base_path = Path("robot/hardware/v2/")
-        if base_path.exists():
-            urdf_path = str(base_path / "robot.urdf")
-            stls_path = str(base_path / "stl")
+        urdf_path = str(base_path / "robot.urdf")
+        stls_path = str(base_path / "stl")
+        try:
             self.robot = pin.RobotWrapper.BuildFromURDF(urdf_path, [stls_path])
+        except Exception as e:
+            print(e)
 
 
 class Robot:
