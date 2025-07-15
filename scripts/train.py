@@ -2,6 +2,7 @@ import copy
 import logging
 
 import hydra
+import wandb
 from omegaconf import DictConfig, OmegaConf, open_dict
 from stable_baselines3.common.callbacks import (
     EvalCallback,
@@ -14,7 +15,6 @@ from stable_baselines3.common.vec_env import (
     VecVideoRecorder,
 )
 
-import wandb
 from furuta.rl.envs.furuta_real import FurutaReal
 from furuta.rl.utils import (
     download_artifact_file,

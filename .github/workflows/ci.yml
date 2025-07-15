@@ -24,5 +24,8 @@ jobs:
       - name: Install the project
         run: uv sync --locked --all-extras --dev
 
+      - name: Lint
+        run: uv run pre-commit run --all-files --config ./.pre-commit-config.yaml
+
       - name: Run tests
         run: uv run pytest tests

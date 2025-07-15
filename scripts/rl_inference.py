@@ -2,10 +2,10 @@ import os
 
 import hydra
 import numpy as np
+import wandb
 from omegaconf import DictConfig
 from stable_baselines3.common.vec_env import DummyVecEnv
 
-import wandb
 from furuta.rl.wrappers import MCAPLogger
 
 

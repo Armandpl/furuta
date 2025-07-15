@@ -50,7 +50,7 @@ class Plotter:
         self.states = states
 
     @classmethod
-    def from_log_path(cls, log_path: (str | Path)) -> "Plotter":
+    def from_log_path(cls, log_path: str | Path) -> "Plotter":
         loader = Loader()
         times, states = loader.load(log_path)
         return cls(times, states)

@@ -9,7 +9,7 @@ from furuta.state import State
 
 
 class SimpleLogger:
-    def __init__(self, log_path: (str | Path)):
+    def __init__(self, log_path: str | Path):
         self.output_file = open(log_path, "wb")
         self.mcap_writer = Writer(self.output_file)
 
