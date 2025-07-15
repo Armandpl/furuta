@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from furuta.logging.protobuf.pendulum_state_pb2 import PendulumState as PBState
 from furuta.logging.protobuf.pendulum_state_pb2 import Signal as PBSignal
@@ -39,10 +39,10 @@ class Signal:
 
 @dataclass
 class State:
-    motor_position: Signal = Signal()
-    pendulum_position: Signal = Signal()
-    motor_velocity: Signal = Signal()
-    pendulum_velocity: Signal = Signal()
+    motor_position: Signal = field(default_factory=Signal)
+    pendulum_position: Signal = field(default_factory=Signal)
+    motor_velocity: Signal = field(default_factory=Signal)
+    pendulum_velocity: Signal = field(default_factory=Signal)
     reward: float = 0.0
     action: float = 0.0
     timing: float = 0.0
