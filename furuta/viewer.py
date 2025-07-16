@@ -21,17 +21,16 @@ class AbstractViewer(ABC):
     def close(self):
         pass
 
-    def animate(self, times: np.ndarray, states: np.ndarray):
+    def animate(self, times: np.ndarray, states: np.ndarray | list[np.ndarray]):
         # Initial state
-        q = states[:, :2]
-        self.display(q[0])
+        self.display(states[0][:2])
         time.sleep(1.0)
         tic = time.time()
         for i in range(1, len(times)):
             toc = time.time()
             time.sleep(max(0, times[i] - times[i - 1] - (toc - tic)))
             tic = time.time()
-            self.display(q[i])
+            self.display(states[i][:2])
 
 
 class Viewer3D(AbstractViewer):
