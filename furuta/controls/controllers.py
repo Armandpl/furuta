@@ -14,22 +14,22 @@ class Controller(ABC):
 
 
 class PIDController(Controller):
-    def __init__(self, parameters):
-        try:
-            sample_time = 1 / parameters["control_frequency"]
-        except KeyError:
-            sample_time = None
+    def __init__(
+        self,
+        dt: float = None,
+        Kp: float = 0.0,
+        Ki: float = 0.0,
+        Kd: float = 0.0,
+        setpoint: float = 0.0,
+    ):
 
-        try:
-            self.pid = PID(
-                Kp=parameters["Kp"],
-                Ki=parameters["Ki"],
-                Kd=parameters["Kd"],
-                setpoint=np.deg2rad(parameters["setpoint"]),
-                sample_time=sample_time,
-            )
-        except KeyError:
-            raise ValueError("Invalid PID parameters")
+        self.pid = PID(
+            Kp=Kp,
+            Ki=Ki,
+            Kd=Kd,
+            setpoint=setpoint,
+            sample_time=dt,
+        )
 
     def compute_command(self, position: float):
         return self.pid(position)
