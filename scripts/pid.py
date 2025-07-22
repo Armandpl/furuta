@@ -1,7 +1,9 @@
-import argparse
 import time
+import furuta
 
 import numpy as np
+
+from pathlib import Path
 
 from furuta.controls.controllers import Controller
 from furuta.controls.filters import VelocityFilter
@@ -15,16 +17,6 @@ PARAMETERS_PATH = "scripts/configs/control/parameters.json"
 DEVICE = "/dev/ttyACM0"
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-d",
-        "--dir",
-        default="../logs/XP/pid/",
-        required=False,
-        help="Log destination directory",
-    )
-    args = parser.parse_args()
-
     # Constants
     control_freq = 100.0
     dt = 1.0 / control_freq
@@ -44,8 +36,10 @@ if __name__ == "__main__":
     )
 
     # Create the logger
-    fname = f"{time.strftime('%Y%m%d-%H%M%S')}.mcap"
-    log_path = args.dir + fname
+    file_name = f"{time.strftime('%Y%m%d-%H%M%S')}.mcap"
+    log_dir = Path(furuta.__path__[0]).parent / "logs" / "pid"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / file_name
     logger = SimpleLogger(log_path)
 
     # Reset encoders

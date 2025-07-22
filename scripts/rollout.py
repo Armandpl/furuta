@@ -1,5 +1,7 @@
-import argparse
+import furuta
+
 from time import strftime
+from pathlib import Path
 
 import numpy as np
 
@@ -12,12 +14,6 @@ from furuta.state import Signal, State
 from furuta.viewer import Viewer3D
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-d", "--dir", default="../logs/rollout/", required=False, help="Log destination directory"
-    )
-    args = parser.parse_args()
-
     # Time constants
     t_final = 3.0
     control_freq = 100  # Hz
@@ -37,8 +33,10 @@ if __name__ == "__main__":
     pendulum_velocity_filter = VelocityFilter(2, 49.0, control_frequency=1 / dt, init_vel=0.0)
 
     # Create the logger
-    fname = f"{strftime('%Y%m%d-%H%M%S')}.mcap"
-    log_path = args.dir + fname
+    file_name = f"{strftime('%Y%m%d-%H%M%S')}.mcap"
+    log_dir = Path(furuta.__path__[0]).parent / "logs" / "rollout"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / file_name
     logger = SimpleLogger(log_path)
 
     # Set the initial state

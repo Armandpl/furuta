@@ -1,8 +1,11 @@
 import time
-from time import strftime
-
 import crocoddyl
+
+from time import strftime
+from pathlib import Path
+
 import numpy as np
+import furuta
 
 from furuta.controls.controllers import SwingUpController
 from furuta.controls.filters import VelocityFilter
@@ -34,8 +37,10 @@ if __name__ == "__main__":
     controller = SwingUpController(robot, x_ref, control_freq, t_final)
 
     # Create the data logger
-    fname = f"{strftime('%Y%m%d-%H%M%S')}.mcap"
-    log_path = "../logs/nmpc_swing_up/" + fname
+    file_name = f"{strftime('%Y%m%d-%H%M%S')}.mcap"
+    log_dir = Path(furuta.__path__[0]).parent / "logs" / "nmpc_swing_up"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / file_name
     logger = SimpleLogger(log_path)
 
     # Solve the OCP a first time to get the warm start

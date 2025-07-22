@@ -7,6 +7,7 @@
 **/replay_buffer/*
 
 data/*
+logs/
 
 # ignore everything except notebooks in the notebook folder
 notebooks/*
