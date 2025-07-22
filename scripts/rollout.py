@@ -1,10 +1,9 @@
-import furuta
-
-from time import strftime
 from pathlib import Path
+from time import strftime
 
 import numpy as np
 
+import furuta
 from furuta.controls.filters import VelocityFilter
 from furuta.logger import Loader, SimpleLogger
 from furuta.plotter import Plotter

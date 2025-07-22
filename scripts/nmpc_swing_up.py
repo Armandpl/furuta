@@ -1,12 +1,11 @@
 import time
-import crocoddyl
-
-from time import strftime
 from pathlib import Path
+from time import strftime
 
+import crocoddyl
 import numpy as np
-import furuta
 
+import furuta
 from furuta.controls.controllers import SwingUpController
 from furuta.controls.filters import VelocityFilter
 from furuta.logger import Loader, SimpleLogger
