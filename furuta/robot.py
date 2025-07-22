@@ -6,15 +6,15 @@ import numpy as np
 import pinocchio as pin
 import serial
 
+import furuta
+
 
 class RobotModel:
     def __init__(self):
-        self.robot = None
-        base_path = Path("robot/hardware/v2/")
-        if base_path.exists():
-            urdf_path = str(base_path / "robot.urdf")
-            stls_path = str(base_path / "stl")
-            self.robot = pin.RobotWrapper.BuildFromURDF(urdf_path, [stls_path])
+        base_path = Path(furuta.__path__[0]).parent / "robot" / "hardware" / "v2"
+        urdf_path = base_path / "robot.urdf"
+        stls_path = base_path / "stl"
+        self.robot = pin.RobotWrapper.BuildFromURDF(urdf_path, [stls_path])
 
 
 class Robot:

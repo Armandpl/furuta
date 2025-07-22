@@ -124,7 +124,7 @@ class FurutaBase(gym.Env):
         terminated = not self.state_space.contains(self._state)
         truncated = False
 
-        return obs, rwd, terminated, truncated, {}
+        return obs, float(rwd), terminated, truncated, {}
 
     def get_obs(self):
         obs = np.float32(

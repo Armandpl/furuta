@@ -1,30 +1,19 @@
-import argparse
 import time
+from pathlib import Path
 
 import numpy as np
 
-from furuta.controls.controllers import Controller
+import furuta
+from furuta.controls.controllers import PIDController
 from furuta.controls.filters import VelocityFilter
-from furuta.controls.utils import read_parameters_file
 from furuta.logger import Loader, SimpleLogger
 from furuta.plotter import Plotter
 from furuta.robot import Robot
 from furuta.state import Signal, State
 
-PARAMETERS_PATH = "scripts/configs/control/parameters.json"
 DEVICE = "/dev/ttyACM0"
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-d",
-        "--dir",
-        default="../logs/XP/pid/",
-        required=False,
-        help="Log destination directory",
-    )
-    args = parser.parse_args()
-
     # Constants
     control_freq = 100.0
     dt = 1.0 / control_freq
@@ -33,9 +22,8 @@ if __name__ == "__main__":
     robot = Robot(DEVICE)
 
     # Init controllers
-    parameters = read_parameters_file()
-    pendulum_controller = Controller.build_controller(parameters["pendulum_controller"])
-    motor_controller = Controller.build_controller(parameters["motor_controller"])
+    pendulum_controller = PIDController(dt=1.0 / 2500.0, Kp=3.5, Ki=20.0, Kd=0.1, setpoint=np.pi)
+    motor_controller = PIDController(Kp=0.2, Ki=0.001)
 
     # Low pass velocity filter
     motor_velocity_filter = VelocityFilter(2, 20.0, control_frequency=control_freq, init_vel=0.0)
@@ -44,8 +32,10 @@ if __name__ == "__main__":
     )
 
     # Create the logger
-    fname = f"{time.strftime('%Y%m%d-%H%M%S')}.mcap"
-    log_path = args.dir + fname
+    file_name = f"{time.strftime('%Y%m%d-%H%M%S')}.mcap"
+    log_dir = Path(furuta.__path__[0]).parent / "logs" / "pid"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / file_name
     logger = SimpleLogger(log_path)
 
     # Reset encoders
