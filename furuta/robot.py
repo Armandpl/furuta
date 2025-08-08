@@ -28,27 +28,60 @@ class Robot:
         self.ser = serial.Serial(device, baudrate)
         self.motor_encoder_cpr = motor_encoder_cpr
         self.pendulum_encoder_cpr = pendulum_encoder_cpr
+        self.write_packet_size = 11
+        self.read_packet_size = 21
+
+    def _send_command(
+        self,
+        command_type: str,
+        motor_command: float = 0.0,
+        desired_position: float = 0.0,
+        desired_velocity: float = 0.0,
+    ):
+        tx = b"\x10\x02"  # start sequence
+        bytes_sent = 2
+        if command_type == "RESET":
+            tx += b"\x00"  # command type = RESET = 0x00
+            bytes_sent += 1
+        elif command_type == "STEP":
+            tx += b"\x01"  # command type = STEP = 0x01
+            # convert the motor command in uint8 (0 - 255) + sign
+            np.clip(motor_command, -1, 1)
+            direction = motor_command < 0
+            int_motor_command = int(np.abs(motor_command) * (2**8 - 1))
+            tx += struct.pack("<?B", direction, int_motor_command)
+            bytes_sent += 3
+        elif command_type == "STEP_PID":
+            tx += b"\x02"  # command type = STEP_PID = 0x02
+            tx += struct.pack("<ff", desired_position, desired_velocity)
+            bytes_sent += 9
+        # complete packet with empty bytes to have a fixed packet size
+        for _ in range(self.write_packet_size - bytes_sent):
+            tx += b"\x00"
+        self.ser.write(tx)
+
+    def _read_measures(self):
+        resp = self.ser.read(self.read_packet_size)
+        motor_position, pendulum_position, motor_velocity, pendulum_velocity, timestamp_micros = (
+            struct.unpack("<ffffLB", resp)
+        )
+        timestamp = timestamp_micros / 1e6
+        return motor_position, pendulum_position, motor_velocity, pendulum_velocity, timestamp
 
     def step(self, motor_command: float):
-        direction = motor_command < 0
-        # convert motor command to 16 bit unsigned int
-        int_motor_command = int(np.abs(motor_command) * (2**16 - 1))
-        tx = b"\x10\x02"  # start sequence
-        tx += b"\x01"  # command type = STEP = 0x01
-        tx += struct.pack("<?H", direction, int_motor_command)
-        self.ser.write(tx)
-        resp = self.ser.read(12)
-        raw_motor_angle, raw_pendulum_angle, raw_timestamp = struct.unpack("<iiL", resp)
-        motor_angle = 2 * np.pi * raw_motor_angle / self.motor_encoder_cpr
-        pendulum_angle = 2 * np.pi * raw_pendulum_angle / self.pendulum_encoder_cpr
-        timestamp = raw_timestamp / 1e6
-        return motor_angle, pendulum_angle, timestamp
+        self._send_command(command_type="STEP", motor_command=motor_command)
+        return self._read_measures
+
+    def step_PID(self, desired_position: float, desired_velocity: float):
+        self._send_command(
+            command_type="STEP_PID",
+            desired_position=desired_position,
+            desired_velocity=desired_velocity,
+        )
+        return self._read_measures()
 
     def reset_encoders(self):
-        tx = b"\x10\x02"  # start sequence
-        tx += b"\x00"  # command type = RESET = 0x00
-        tx += b"\x00\x00\x00"  # three empty bytes to have fixed len packets
-        self.ser.write(tx)
+        self._send_command(command_type="RESET")
 
     def close(self):
         self.step(0)
