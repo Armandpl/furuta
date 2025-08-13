@@ -29,7 +29,7 @@ class Robot:
         self.motor_encoder_cpr = motor_encoder_cpr
         self.pendulum_encoder_cpr = pendulum_encoder_cpr
         self.write_packet_size = 11
-        self.read_packet_size = 21
+        self.read_packet_size = 23
 
     def _send_command(
         self,
@@ -46,10 +46,10 @@ class Robot:
         elif command_type == "STEP":
             tx += b"\x01"  # command type = STEP = 0x01
             # convert the motor command in uint16 (0 - 65535) + sign
-            np.clip(motor_command, -1, 1)
+            motor_command = np.clip(motor_command, -1, 1)
             direction = motor_command < 0
-            int_motor_command = int(np.abs(motor_command) * (2**16 - 1))
-            tx += struct.pack("<?H", direction, int_motor_command)
+            motor_command_int = int(np.abs(motor_command) * (2**16 - 1))
+            tx += struct.pack("<?H", direction, motor_command_int)
             bytes_sent += 4
         elif command_type == "STEP_PID":
             tx += b"\x02"  # command type = STEP_PID = 0x02
@@ -62,15 +62,31 @@ class Robot:
 
     def _read_measures(self):
         resp = self.ser.read(self.read_packet_size)
-        motor_position, pendulum_position, motor_velocity, pendulum_velocity, timestamp_micros = (
-            struct.unpack("<ffffLB", resp)
-        )
+        (
+            motor_position,
+            pendulum_position,
+            motor_velocity,
+            pendulum_velocity,
+            timestamp_micros,
+            motor_direction,
+            motor_command_int,
+        ) = struct.unpack("<ffffL?H", resp)
         timestamp = timestamp_micros / 1e6
-        return motor_position, pendulum_position, motor_velocity, pendulum_velocity, timestamp
+        motor_command = motor_command_int / (2**16 - 1)
+        if motor_direction:
+            motor_command *= -1
+        return (
+            motor_position,
+            pendulum_position,
+            motor_velocity,
+            pendulum_velocity,
+            timestamp,
+            motor_command,
+        )
 
     def step(self, motor_command: float):
         self._send_command(command_type="STEP", motor_command=motor_command)
-        return self._read_measures
+        return self._read_measures()
 
     def step_PID(self, desired_position: float, desired_velocity: float):
         self._send_command(

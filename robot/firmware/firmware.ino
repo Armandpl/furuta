@@ -39,13 +39,13 @@ uint16_t motorCommand = 0;
 float pdCommand = 0;
 
 float motorPosition = 0.0;
-float pendulumPosition =0.0;
+float pendulumPosition = 0.0;
 float motorVelocity = 0.0;
-float pendulumVelocity =0.0;
+float pendulumVelocity = 0.0;
 unsigned long timestamp = 0.0;
 
-float Kp = 3.0;
-float Kv = 0.05;
+float Kp = 4.0;
+float Kv = 0.0;
 float TAU = 0.03;
 
 void reset() {
@@ -84,12 +84,6 @@ void setup() {
 
 
 void loop() {
-  // Watchdog
-  if (millis() - lastCommandReceived > COMMAND_TIMEOUT) {
-    processMotorCommand(0, true); // kill motor
-    return;
-  }
-
   // check for new message
   if (Serial.available() >= PACKET_SIZE)
   {
@@ -108,18 +102,18 @@ void loop() {
     uint8_t bytesRead = 3;
     if (commandType == RESET)
     {
-      reset()
+      reset();
     }
     else if (commandType == STEP)
     {
       motorDirection = Serial.read();
-      Serial.readBytes((uint8_t*)&motorCommand, sizeof(motorCommand));
+      Serial.readBytes((char*)&motorCommand, sizeof(motorCommand));
       bytesRead += 3;
     }
     else if (commandType == STEP_PID)
     {
-      Serial.readBytes((uint8_t*)&motorDesiredPosition, sizeof(motorDesiredPosition));
-      Serial.readBytes((uint8_t*)&motorDesiredVelocity, sizeof(motorDesiredVelocity));
+      Serial.readBytes((char*)&motorDesiredPosition, sizeof(motorDesiredPosition));
+      Serial.readBytes((char*)&motorDesiredVelocity, sizeof(motorDesiredVelocity));
       bytesRead += 8;
     }
     // Discard unnecessary bytes from the serial buffer
@@ -133,7 +127,14 @@ void loop() {
     Serial.write((uint8_t*)&motorVelocity, sizeof(motorVelocity));
     Serial.write((uint8_t*)&pendulumVelocity, sizeof(pendulumVelocity));
     Serial.write((uint8_t*)&timestamp, sizeof(timestamp));
+    Serial.write((uint8_t*)&motorDirection, sizeof(motorDirection));
     Serial.write((uint8_t*)&motorCommand, sizeof(motorCommand));
+  }
+
+  // Watchdog
+  if (millis() - lastCommandReceived > COMMAND_TIMEOUT) {
+    processMotorCommand(0, true); // kill motor
+    return;
   }
 
   // Read encoders
@@ -148,7 +149,7 @@ void loop() {
   pendulumVelocity = (2 * (pendulumPositionNew - pendulumPosition) / dt - (1 - 2 * TAU / dt) * pendulumVelocity) / (1 + 2 * TAU / dt);
 
   motorPosition = motorPositionNew;
-  pendulumPosition = dt;
+  pendulumPosition = pendulumPositionNew;
   timestamp = timestampNew;
 
   if (commandType == STEP_PID)
