@@ -45,12 +45,12 @@ class Robot:
             bytes_sent += 1
         elif command_type == "STEP":
             tx += b"\x01"  # command type = STEP = 0x01
-            # convert the motor command in uint8 (0 - 255) + sign
+            # convert the motor command in uint16 (0 - 65535) + sign
             np.clip(motor_command, -1, 1)
             direction = motor_command < 0
-            int_motor_command = int(np.abs(motor_command) * (2**8 - 1))
-            tx += struct.pack("<?B", direction, int_motor_command)
-            bytes_sent += 3
+            int_motor_command = int(np.abs(motor_command) * (2**16 - 1))
+            tx += struct.pack("<?H", direction, int_motor_command)
+            bytes_sent += 4
         elif command_type == "STEP_PID":
             tx += b"\x02"  # command type = STEP_PID = 0x02
             tx += struct.pack("<ff", desired_position, desired_velocity)

@@ -35,7 +35,7 @@ uint8_t commandType = RESET;
 float motorDesiredPosition = 0.0;
 float motorDesiredVelocity = 0.0;
 bool motorDirection = false;
-uint8_t motorCommand = 0;
+uint16_t motorCommand = 0;
 float pdCommand = 0;
 
 float motorPosition = 0.0;
@@ -57,7 +57,7 @@ void reset() {
   processMotorCommand(0, true); // kill motor
 }
 
-void processMotorCommand(uint8_t motorCommand, bool direction) {
+void processMotorCommand(uint16_t motorCommand, bool direction) {
   if (direction) {
     analogWrite(PWM1, motorCommand);
     analogWrite(PWM2, 0);
@@ -73,9 +73,10 @@ void setup() {
   // setup motor pins
   pinMode(PWM1, OUTPUT);
   pinMode(PWM2, OUTPUT);
-  // TODO : see if we can get a write resolution better than 8 bits
-  // seeeduino doc says 10 bits max on A0
-  // analogWriteResolution(16);
+
+  // Apparently the PWM resolution on the SAMD21 is 16 bits
+  // https://tomalmy.com/analogwriteresolution-and-the-samd21/
+  analogWriteResolution(16);
 
   // setup serial
   Serial.begin(921600);
@@ -112,14 +113,14 @@ void loop() {
     else if (commandType == STEP)
     {
       motorDirection = Serial.read();
-      Serial.readBytes((char*)&motorCommand, sizeof(motorCommand));
-      bytesRead += 2;
+      Serial.readBytes((uint8_t*)&motorCommand, sizeof(motorCommand));
+      bytesRead += 3;
     }
     else if (commandType == STEP_PID)
     {
-      Serial.readBytes((char*)&motorDesiredPosition, sizeof(motorDesiredPosition));
-      Serial.readBytes((char*)&motorDesiredVelocity, sizeof(motorDesiredVelocity));
-      bytesRead += ... ;
+      Serial.readBytes((uint8_t*)&motorDesiredPosition, sizeof(motorDesiredPosition));
+      Serial.readBytes((uint8_t*)&motorDesiredVelocity, sizeof(motorDesiredVelocity));
+      bytesRead += 8;
     }
     // Discard unnecessary bytes from the serial buffer
     for (int i = 0; i < (PACKET_SIZE - bytesRead); i++)
@@ -149,15 +150,12 @@ void loop() {
   motorPosition = motorPositionNew;
   pendulumPosition = dt;
   timestamp = timestampNew;
-  if (commandType == STEP)
-  {
-    processMotorCommand(motorCommand, motorDirection);
-  }
-  else if (commandType == STEP_PID)
+
+  if (commandType == STEP_PID)
   {
     pdCommand = Kp * (motorDesiredPosition - motorPosition) + Kv * (motorDesiredVelocity - motorVelocity);
     motorDirection = (pdCommand < 0.0);
-    motorCommand = constrain(abs(pdCommand), 0.0, 1.0) * 255;
+    motorCommand = constrain(abs(pdCommand), 0.0, 1.0) * UINT16_MAX;
   }
 
   // process the motor command
