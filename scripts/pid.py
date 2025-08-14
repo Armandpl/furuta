@@ -50,8 +50,8 @@ if __name__ == "__main__":
             t += dt
             # Compute motorn command
             motor_command = 0
-            motor_command -= pendulum_controller.compute_command(pendulum_position)
-            motor_command -= motor_controller.compute_command(motor_position)
+            motor_command += pendulum_controller.compute_command(pendulum_position)
+            motor_command += motor_controller.compute_command(motor_position)
             motor_command = np.clip(motor_command, -1, 1)
 
             (

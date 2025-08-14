@@ -801,7 +801,6 @@ dependencies = [
     { name = "pygame" },
     { name = "pyserial" },
     { name = "scipy" },
-    { name = "simple-pid" },
 ]
 
 [package.optional-dependencies]
@@ -844,7 +843,6 @@ requires-dist = [
     { name = "sb3-contrib", marker = "extra == 'dev'", git = "https://github.com/Stable-Baselines-Team/stable-baselines3-contrib" },
     { name = "sbx-rl", marker = "extra == 'dev'", specifier = ">=0.10.0" },
     { name = "scipy", specifier = ">=1.11.4" },
-    { name = "simple-pid", specifier = ">=2.0.0" },
     { name = "stable-baselines3", marker = "extra == 'dev'", specifier = ">=2.2.1" },
     { name = "tensorboard", marker = "extra == 'dev'", specifier = ">=2.15.1" },
     { name = "wandb", marker = "extra == 'dev'", specifier = ">=0.16.2" },
@@ -2721,15 +2719,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/18/5d/3bf57dcd21979b887f014ea83c24ae194cfcd12b9e0fda66b957c69d1fca/setuptools-80.9.0.tar.gz", hash = "sha256:f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c", size = 1319958, upload-time = "2025-05-27T00:56:51.443Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl", hash = "sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922", size = 1201486, upload-time = "2025-05-27T00:56:49.664Z" },
-]
-
-[[package]]
-name = "simple-pid"
-version = "2.0.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/78/0a/c670a4f4dea4b21c0b074b193c54698e5e047479e688c8d5495d264c9921/simple_pid-2.0.1.tar.gz", hash = "sha256:5771761c54541c900e597d6c2e4ea93fd2cc98f4e48cb9eca265fba2e65be99e", size = 15577, upload-time = "2024-07-21T13:27:32.037Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ee/0e/4d4fe01b21558a31a12e029a57cf677666c89c1b00cb82c1b53d0025cd63/simple_pid-2.0.1-py3-none-any.whl", hash = "sha256:1d53ed76b03d949ceea46b538fb22999d27899e2e655aa19b99c40f6edcedca6", size = 7194, upload-time = "2024-07-21T13:27:30.688Z" },
 ]
 
 [[package]]

@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 import crocoddyl
 import numpy as np
 import pinocchio as pin
-from simple_pid import PID
 
 
 class Controller(ABC):
@@ -16,23 +15,30 @@ class Controller(ABC):
 class PIDController(Controller):
     def __init__(
         self,
-        dt: float = None,
+        dt: float,
         Kp: float = 0.0,
         Ki: float = 0.0,
         Kd: float = 0.0,
         setpoint: float = 0.0,
     ):
+        self.dt = dt
+        self.Kp = Kp
+        self.Ki = Ki
+        self.Kd = Kd
+        self.setpoint = setpoint
 
-        self.pid = PID(
-            Kp=Kp,
-            Ki=Ki,
-            Kd=Kd,
-            setpoint=setpoint,
-            sample_time=dt,
-        )
+        self.integral = 0.0
+        self.prev_error = 0.0
 
-    def compute_command(self, position: float):
-        return self.pid(position)
+    def compute_command(self, state: float) -> float:
+        error = self.setpoint - state
+        self.integral += error * self.dt
+        derivative = (error - self.prev_error) / self.dt
+
+        command = self.Kp * error + self.Ki * self.integral + self.Kd * derivative
+
+        self.prev_error = error
+        return command
 
 
 class SwingUpController(Controller):
