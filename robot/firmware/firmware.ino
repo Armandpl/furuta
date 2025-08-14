@@ -29,6 +29,7 @@ Encoder pendulumEncoder(PENDULUM_ENC_A, PENDULUM_ENC_B);
 // Watchdog
 volatile unsigned long lastCommandReceived = 0;
 const unsigned long COMMAND_TIMEOUT = 500; // ms
+bool watchdogTriggered = true;
 
 uint8_t commandType = RESET;
 
@@ -49,12 +50,13 @@ float Kv = 0.0;
 float TAU = 0.03;
 
 void reset() {
+  processMotorCommand(0, true); // kill motor
   motorEncoder.write(0);
   pendulumEncoder.write(0);
   motorDesiredPosition = 0.0;
   motorDesiredVelocity = 0.0;
   motorCommand = 0;
-  processMotorCommand(0, true); // kill motor
+  watchdogTriggered = false;
 }
 
 void processMotorCommand(uint16_t motorCommand, bool direction) {
@@ -134,6 +136,7 @@ void loop() {
   // Watchdog
   if (millis() - lastCommandReceived > COMMAND_TIMEOUT) {
     processMotorCommand(0, true); // kill motor
+    watchdogTriggered = true;
     return;
   }
 
@@ -159,6 +162,9 @@ void loop() {
     motorCommand = constrain(abs(pdCommand), 0.0, 1.0) * UINT16_MAX;
   }
 
-  // process the motor command
-  processMotorCommand(motorCommand, motorDirection);
+  if (not watchdogTriggered)
+  {
+    // process the motor command
+    processMotorCommand(motorCommand, motorDirection);
+  }
 }
