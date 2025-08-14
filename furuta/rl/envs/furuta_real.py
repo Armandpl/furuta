@@ -86,7 +86,7 @@ class FurutaReal(FurutaBase):
                 logging.info(f"Reset timeout, alpha: {np.rad2deg(self._state[ALPHA])}")
 
         # reset both encoder, motor back to pos=0
-        self.robot.reset_encoders()
+        self.robot.reset()
 
         logging.info("Reset done")
         # else the first computed velocity will take into account previous episode

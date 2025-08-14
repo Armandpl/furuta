@@ -39,7 +39,7 @@ if __name__ == "__main__":
     logger = SimpleLogger(log_path)
 
     # Reset encoders
-    robot.reset_encoders()
+    robot.reset()
 
     # Wait for user input to start the control loop
     input("Go?")

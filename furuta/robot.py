@@ -96,11 +96,11 @@ class Robot:
         )
         return self._read_measures()
 
-    def reset_encoders(self):
+    def reset(self):
         self._send_command(command_type="RESET")
 
     def close(self):
-        self.step(0)
+        self.reset()
         self.ser.close()
 
 

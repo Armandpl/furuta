@@ -36,7 +36,7 @@ if __name__ == "__main__":
     input("Go?")
 
     # Reset encoders
-    robot.reset_encoders()
+    robot.reset()
 
     t = 0.0
 
@@ -68,7 +68,7 @@ if __name__ == "__main__":
             tic = time.time()
 
     # Stop robot
-    robot.reset_encoders()
+    robot.close()
 
     # Close logger
     logger.stop()
