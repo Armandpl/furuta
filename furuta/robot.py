@@ -98,6 +98,7 @@ class Robot:
 
     def reset(self):
         self._send_command(command_type="RESET")
+        self.ser.flush()
 
     def close(self):
         self.reset()
