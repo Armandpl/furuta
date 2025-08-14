@@ -64,12 +64,13 @@ class Plotter:
             / "layout.yaml"
         )
         layout = load_layout(layout_path)
+        ax = None
         for k, tab in enumerate(layout.tabs):
             plt.figure(k + 1)
             plt.suptitle(tab.name)
 
             for idx, plot in enumerate(tab.plots):
-                ax = plt.subplot(*tab.shape, idx + 1)
+                ax = plt.subplot(*tab.shape, idx + 1, sharex=ax)
                 ax.set_title(plot.name)
 
                 for var in plot.variables:
