@@ -20,9 +20,10 @@ if __name__ == "__main__":
     dt = 1.0 / control_freq
     f = 1  # Hz
     omega = 2 * np.pi * f
-    A = 0.5
+    A = np.pi / 2
 
-    motor_command = 0.0
+    desired_motor_position = 0.0
+    desired_motor_velocity = 0.0
 
     # Create the logger
     file_name = f"{time.strftime('%Y%m%d-%H%M%S')}.mcap"
@@ -44,7 +45,8 @@ if __name__ == "__main__":
         toc = time.time()
         if toc - tic > dt:
             t += dt
-            motor_command = A * np.sin(omega * t)
+            desired_motor_position = A * (1 - np.cos(omega * t))
+            desired_motor_velocity = A * omega * np.sin(omega * t)
 
             (
                 motor_position,
@@ -53,11 +55,11 @@ if __name__ == "__main__":
                 _,
                 timestamp,
                 motor_command,
-            ) = robot.step(motor_command)
+            ) = robot.step_PID(desired_motor_position, desired_motor_velocity)
 
             state = State(
-                motor_position=Signal(measured=motor_position),
-                motor_velocity=Signal(measured=motor_velocity),
+                motor_position=Signal(measured=motor_position, desired=desired_motor_position),
+                motor_velocity=Signal(measured=motor_velocity, desired=desired_motor_velocity),
                 action=motor_command,
             )
 
