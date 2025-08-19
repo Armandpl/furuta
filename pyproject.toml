@@ -9,7 +9,6 @@ requires-python = ">=3.11"
 dependencies = [
     "gymnasium>=0.29.1",
     "pyserial>=3.5",
-    "simple-pid>=2.0.0",
     "mcap-protobuf-support>=0.4.1",
     "scipy>=1.11.4",
     "pygame>=2.5.2",

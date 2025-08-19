@@ -49,7 +49,7 @@ def test_motor_direction(device):
 
 def test_has_pendulum_fallen(device):
     robot = Robot(device)
-    robot.reset_encoders()
+    robot.reset()
 
     input("Lift the pendulum and press enter, then let the pendulum fall")
     time.sleep(3.0)

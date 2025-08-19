@@ -3,7 +3,6 @@ from time import sleep
 from typing import Optional
 
 import numpy as np
-from simple_pid import PID
 
 from furuta.rl.envs.furuta_base import FurutaBase
 from furuta.robot import Robot
@@ -55,18 +54,9 @@ class FurutaReal(FurutaBase):
 
         if self._state is not None:  # if not first reset
             logging.debug("Stopping motor")
-            # motor_pid = PID(
-            #     self.motor_stop_pid[0],
-            #     self.motor_stop_pid[1],
-            #     self.motor_stop_pid[2],
-            #     setpoint=0.0,
-            #     output_limits=(-1, 1),
-            # )
 
             reset_time = 0
             while abs(self._state[THETA_DOT]) > 0.5 and reset_time < MAX_MOTOR_RESET_TIME:
-                # act = motor_pid(self._state[THETA_DOT])
-                # self._update_state(act)
                 reset_time += self.timing.dt
                 sleep(self.timing.dt)
 
@@ -86,7 +76,7 @@ class FurutaReal(FurutaBase):
                 logging.info(f"Reset timeout, alpha: {np.rad2deg(self._state[ALPHA])}")
 
         # reset both encoder, motor back to pos=0
-        self.robot.reset_encoders()
+        self.robot.reset()
 
         logging.info("Reset done")
         # else the first computed velocity will take into account previous episode

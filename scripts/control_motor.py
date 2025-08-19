@@ -4,7 +4,6 @@ from pathlib import Path
 import numpy as np
 
 import furuta
-from furuta.controls.controllers import PIDController
 from furuta.logger import Loader, SimpleLogger
 from furuta.plotter import Plotter
 from furuta.robot import Robot
@@ -19,26 +18,23 @@ if __name__ == "__main__":
     # Constants
     control_freq = 100.0
     dt = 1.0 / control_freq
+    f = 1  # Hz
+    omega = 2 * np.pi * f
+    A = 0.5
 
-    # Initial state
-    motor_position = 0.0
-    pendulum_position = 0.0
-
-    # Init controllers
-    pendulum_controller = PIDController(dt=dt, Kp=3.5, Ki=20.0, Kd=0.1, setpoint=pendulum_position)
-    motor_controller = PIDController(dt=dt, Kp=0.2, Ki=0.001, Kd=0.0, setpoint=motor_position)
+    motor_command = 0.0
 
     # Create the logger
     file_name = f"{time.strftime('%Y%m%d-%H%M%S')}.mcap"
-    log_dir = Path(furuta.__path__[0]).parent / "logs" / "xp" / "pid"
+    log_dir = Path(furuta.__path__[0]).parent / "logs" / "xp" / "control_motor"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / file_name
     logger = SimpleLogger(log_path)
 
     # Wait for user input to start the control loop
-    input("Lift the pendulum upward and press Enter")
+    input("Go?")
 
-    # Reset encoders. The upward position is now 0.0
+    # Reset encoders
     robot.reset()
 
     t = 0.0
@@ -48,35 +44,21 @@ if __name__ == "__main__":
         toc = time.time()
         if toc - tic > dt:
             t += dt
-            # Compute motorn command
-            motor_command = 0
-            motor_command += pendulum_controller.compute_command(pendulum_position)
-            motor_command += motor_controller.compute_command(motor_position)
-            motor_command = np.clip(motor_command, -1, 1)
+            motor_command = A * np.sin(omega * t)
 
             (
                 motor_position,
-                pendulum_position,
+                _,
                 motor_velocity,
-                pendulum_velocity,
+                _,
                 timestamp,
-                action,
+                motor_command,
             ) = robot.step(motor_command)
 
-            # Basic safety
-            if abs(pendulum_position) > np.pi / 2:
-                break
-            if abs(motor_position) > 2 * np.pi:
-                break
-
-            # Log
             state = State(
                 motor_position=Signal(measured=motor_position),
-                pendulum_position=Signal(measured=pendulum_position),
                 motor_velocity=Signal(measured=motor_velocity),
-                pendulum_velocity=Signal(measured=pendulum_velocity, filtered=pendulum_velocity),
-                action=action,
-                timing=toc - tic,
+                action=motor_command,
             )
 
             logger.update(int(timestamp * 1e9), state)
