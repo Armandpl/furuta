@@ -18,7 +18,7 @@ if __name__ == "__main__":
     # Constants
     control_freq = 100.0
     dt = 1.0 / control_freq
-    f = 1  # Hz
+    f = 3  # Hz
     omega = 2 * np.pi * f
     A = np.pi / 2
 

@@ -6,6 +6,8 @@
 const float MOTOR_CPR = 400.0;
 const float PENDULUM_CPR = 5120.0 * 4;
 
+const float MOTOR_MAX_VEL = 150.0;  // rad/s
+
 // protocol def
 const uint8_t PACKET_SIZE = 11;
 const uint8_t RESET = 0;
@@ -44,9 +46,10 @@ float motorVelocity = 0.0;
 float pendulumVelocity = 0.0;
 unsigned long timestamp = 0.0;
 
-float Kp = 4.0;
-float Kv = 0.0;
-float TAU = 0.03;
+float Kff = 1.5 / MOTOR_MAX_VEL;
+float Kp = 5.0;
+float Kv = 0.02;
+float TAU = 0.005;
 
 void reset() {
   processMotorCommand(0, true); // kill motor
@@ -154,7 +157,7 @@ void loop() {
 
   if (commandType == STEP_PID)
   {
-    pdCommand = Kp * (motorDesiredPosition - motorPosition) + Kv * (motorDesiredVelocity - motorVelocity);
+    pdCommand = Kff * motorDesiredVelocity + Kp * (motorDesiredPosition - motorPosition) + Kv * (motorDesiredVelocity - motorVelocity);
     motorDirection = (pdCommand < 0.0);
     motorCommand = constrain(abs(pdCommand), 0.0, 1.0) * UINT16_MAX;
   }
