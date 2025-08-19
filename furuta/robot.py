@@ -1,4 +1,5 @@
 import struct
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -98,7 +99,8 @@ class Robot:
 
     def reset(self):
         self._send_command(command_type="RESET")
-        self.ser.flush()
+        time.sleep(0.5)
+        self.ser.read_all()
 
     def close(self):
         self.reset()
