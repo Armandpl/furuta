@@ -63,73 +63,94 @@ if __name__ == "__main__":
 
     t = 0.0
     u = 0.0
-    x = init_state
 
-    tic = time.time()
-    while t < t_XP:
-        toc = time.time()
-        if toc - tic > dt:
-            t += dt
+    (
+        motor_position,
+        pendulum_position,
+        motor_velocity,
+        pendulum_velocity,
+        timestamp,
+        motor_command,
+    ) = robot.step(0.0)
 
-            # Update residual ref
-            controller.control_rate_residual.reference = np.array([u])
+    t0 = timestamp
+    x = np.array(
+        [
+            motor_position,
+            pendulum_position,
+            motor_velocity,
+            pendulum_velocity,
+        ]
+    )
 
-            # Solve the OCP
-            start = time.time()
-            u = controller.compute_command(x, 10, x_ws, u_ws)
-            stop = time.time()
-            compute_time = stop - start
+    while timestamp - t0 < t_XP:
+        # Update residual ref
+        controller.control_rate_residual.reference = np.array([u])
 
-            (
-                desired_motor_position,
-                desired_pendulum_position,
-                desired_motor_velocity,
-                desired_pendulum_velocity,
-            ) = controller.get_trajectoy()[1]
+        # Solve the OCP
+        start = time.time()
+        u = controller.compute_command(x, 20, x_ws, u_ws)
+        stop = time.time()
+        compute_time = stop - start
 
-            (
+        (
+            desired_motor_position,
+            desired_pendulum_position,
+            desired_motor_velocity,
+            desired_pendulum_velocity,
+        ) = controller.get_trajectoy()[1]
+
+        # Basic safety
+        if abs(desired_pendulum_position) > 2 * np.pi:
+            break
+        if abs(desired_motor_position) > np.pi:
+            break
+        if abs(desired_motor_velocity) > 50.0:
+            break
+
+        (
+            motor_position,
+            pendulum_position,
+            motor_velocity,
+            pendulum_velocity,
+            timestamp,
+            motor_command,
+        ) = robot.step_PID(desired_motor_position, desired_motor_velocity)
+
+        # Basic safety
+        if abs(pendulum_position) > 2 * np.pi:
+            break
+        if abs(motor_position) > np.pi:
+            break
+        if abs(motor_velocity) > 50.0:
+            break
+
+        state = State(
+            motor_position=Signal(measured=motor_position, desired=desired_motor_position),
+            motor_velocity=Signal(measured=motor_velocity, desired=desired_motor_velocity),
+            pendulum_position=Signal(
+                measured=pendulum_position, desired=desired_pendulum_position
+            ),
+            pendulum_velocity=Signal(
+                measured=pendulum_velocity, desired=desired_pendulum_velocity
+            ),
+            action=motor_command,
+            timing=compute_time,
+        )
+        logger.update(int((timestamp - t0) * 1e9), state)
+
+        # Get the warm start from the controller
+        x_ws, u_ws = controller.get_warm_start()
+
+        # Update state
+        x = np.array(
+            [
                 motor_position,
                 pendulum_position,
                 motor_velocity,
                 pendulum_velocity,
-                timestamp,
-                motor_command,
-            ) = robot.step_PID(desired_motor_position, desired_motor_velocity)
-
-            # Basic safety
-            if abs(pendulum_position) > 2 * np.pi:
-                break
-            if abs(motor_position) > 2 * np.pi:
-                break
-
-            state = State(
-                motor_position=Signal(measured=motor_position, desired=desired_motor_position),
-                motor_velocity=Signal(measured=motor_velocity, desired=desired_motor_velocity),
-                pendulum_position=Signal(
-                    measured=pendulum_position, desired=desired_pendulum_position
-                ),
-                pendulum_velocity=Signal(
-                    measured=pendulum_velocity, desired=desired_pendulum_velocity
-                ),
-                action=motor_command,
-                timing=compute_time,
-            )
-            logger.update(int(timestamp * 1e9), state)
-
-            # Get the warm start from the controller
-            x_ws, u_ws = controller.get_warm_start()
-
-            # Update state
-            x = np.array(
-                [
-                    motor_position,
-                    pendulum_position,
-                    motor_velocity,
-                    pendulum_velocity,
-                ]
-            )
-
-            tic = time.time()
+            ]
+        )
 
     # Close logger
     logger.stop()
