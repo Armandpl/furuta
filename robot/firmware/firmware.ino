@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include <Encoder.h>
+#include "pico/time.h"
 
 // protocol def
 const uint8_t PACKET_SIZE = 6;
@@ -8,17 +8,13 @@ const uint8_t STEP = 1;
 
 // Pin definitions
 // motor driver
-uint8_t PWM1 = A1;
-uint8_t PWM2 = A2;
+const int STEP_PIN = D0; // Step pin for stepper motor
+const int DIR_PIN = D1;  // Direction pin for stepper motor
+static struct repeating_timer timer;
+int MAX_DELAY_US = 1000; // toggle very 1ms = 1 rising every 2 ms = 500 steps/s = ~1RPS = slowest
+int MIN_DELAY_US = 20; 
 
-const uint8_t MOTOR_ENC_A = 9;
-const uint8_t MOTOR_ENC_B = 10;
-
-const uint8_t PENDULUM_ENC_A = 7;
-const uint8_t PENDULUM_ENC_B = 8;
-
-Encoder motorEncoder(MOTOR_ENC_A, MOTOR_ENC_B);
-Encoder pendulumEncoder(PENDULUM_ENC_A, PENDULUM_ENC_B);
+const uint8_t MOTOR_ENC = 2; // A2, read with analogWrite until we get AS5600 that has configurable address
 
 volatile unsigned long lastCommandReceived = 0;
 const unsigned long COMMAND_TIMEOUT = 500; // ms
@@ -26,21 +22,29 @@ const unsigned long COMMAND_TIMEOUT = 500; // ms
 
 void processMotorCommand(uint16_t motor_command, bool direction) {
   if (direction) {
-    analogWrite(PWM1, motor_command);
-    analogWrite(PWM2, 0);
+    digitalWrite(DIR_PIN, LOW);
+  } else {
+    digitalWrite(DIR_PIN, HIGH);
   }
-  else {
-    analogWrite(PWM1, 0);
-    analogWrite(PWM2, motor_command);
+      
+  if (speed == 0) {
+    cancel_repeating_timer(&timer); // stop motor
+    return;
   }
+  
+  // map absolute speed (0-1) to timer interval 
+  float abs_speed = abs(speed);
+  int timer_interval = (int)(MAX_DELAY_US - (abs_speed * (MAX_DELAY_US - MIN_DELAY_US)));
+  
+  cancel_repeating_timer(&timer);
+  add_repeating_timer_us(timer_interval, timer_callback, NULL, &timer);
 }
 
 
 void setup() {
   // setup motor pins
-  pinMode(PWM1, OUTPUT);
-  pinMode(PWM2, OUTPUT);
-  analogWriteResolution(16);
+  pinMode(STEP_PIN, OUTPUT);
+  pinMode(DIR_PIN, OUTPUT);
 
   // setup serial
   Serial.begin(921600);
