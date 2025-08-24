@@ -64,8 +64,8 @@ class SwingUpController(Controller):
         control_freq: float = 100.0,
         t_final: float = 0.5,
         u_lim: float = 0.1,
-        Q: np.ndarray = np.array([10, 50, 1, 1]),
-        R: np.ndarray = np.array([0.1]),
+        Q: np.ndarray = np.array([1, 50, 10, 1]),
+        R: np.ndarray = np.array([1.0]),
         S: np.ndarray = np.array([1.0]),
         M: int = 10,
     ):
