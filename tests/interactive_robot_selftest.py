@@ -1,3 +1,4 @@
+import sys
 import time
 
 import numpy as np
@@ -8,6 +9,7 @@ from furuta.robot import Robot
 
 
 def test_control_freq(device):
+    print("Running test_control_freq...")
     robot = Robot(device)
     nb_iterations = 10_000
     start_time = time.time()
@@ -24,13 +26,12 @@ def test_control_freq(device):
 
 
 def test_motor_stop(device):
-    robot = Robot(device)  # replace with your actual constructor if needed
-    robot.step(0.35)
+    robot = Robot(device)
+    robot.step(1.0)
 
-    time.sleep(0.5)  # wait for 500ms
+    time.sleep(.5)
 
-    # Ask the user if the motor has stopped
-    user_response = input("Has the motor stopped? (yes/no): ")
+    user_response = input("Has the motor started then stopped? (yes/no): ")
     robot.close()
     assert user_response.lower() == "yes", "The motor did not stop after 500ms"
     return ""
@@ -38,10 +39,10 @@ def test_motor_stop(device):
 
 def test_motor_direction(device):
     robot = Robot(device)
-    robot.step(0.35)
+    robot.step(-1.0)
     time.sleep(0.5)  # wait for 500ms
 
-    user_response = input("Was the motor spinning counter-clockwise? (yes/no): ")
+    user_response = input("Was the motor spinning clockwise? (yes/no): ")
     robot.close()
     assert user_response.lower() == "yes", "Motor spinning backwards, swap motor wires."
     return ""
@@ -56,8 +57,8 @@ def test_has_pendulum_fallen(device):
 
     _, pendulum_angle, _ = robot.step(0.0)
     robot.close()
-    assert abs(pendulum_angle) < np.deg2rad(15.0), "Pendulum angle too high"
-    return f"pendulum angle OK: {pendulum_angle}"
+    assert np.cos(pendulum_angle) < np.cos(np.deg2rad(15.0)), f"Pendulum angle too high: {pendulum_angle:.2f} rad"
+    return f"pendulum angle OK: {pendulum_angle:.2f} rad"
 
 
 def print_report(results):
@@ -79,9 +80,8 @@ def run_tests(tests, device):
 
 
 if __name__ == "__main__":
-    device = input("Enter robot device (press enter for default: /dev/ttyACM0): ")
-    if device == "":
-        device = "/dev/ttyACM0"
+    if len(sys.argv) > 1: device = sys.argv[1]
+    else: device = "/dev/ttyACM0"
 
     tests = [test_control_freq, test_motor_stop, test_motor_direction, test_has_pendulum_fallen]
 

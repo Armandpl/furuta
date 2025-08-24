@@ -22,8 +22,8 @@ class Robot:
         self,
         device="/dev/ttyACM0",
         baudrate=921600,
-        motor_encoder_cpr=400,
-        pendulum_encoder_cpr=5120 * 4,
+        motor_encoder_cpr=1024,
+        pendulum_encoder_cpr=4096,
     ):
         self.ser = serial.Serial(device, baudrate)
         self.motor_encoder_cpr = motor_encoder_cpr
