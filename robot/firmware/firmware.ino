@@ -56,7 +56,7 @@ void processMotorCommand(float motor_command, bool direction) {
   }
   
   // map absolute speed (0-1) to timer interval 
-  float abs_speed = abs(motor_command);
+  float abs_speed = motor_command/65535;
   int timer_interval = (int)(MAX_DELAY_US - (abs_speed * (MAX_DELAY_US - MIN_DELAY_US)));
   
   cancel_repeating_timer(&timer);
@@ -138,8 +138,6 @@ void loop() {
       bool direction = Serial.read();
       uint16_t motor_command;
       Serial.readBytes((char*)&motor_command, sizeof(motor_command));
-      motor_command = (float)motor_command / 65535.0;
-
       processMotorCommand(motor_command, direction);
 
       int32_t pendulumEncoderValue = as5600.getRawAngle(); // is 12 bits
