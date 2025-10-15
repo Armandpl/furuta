@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <pico/time.h>
 #include <Adafruit_AS5600.h>
+#include <Adafruit_NeoPixel.h>
 
 // protocol def
 const uint8_t PACKET_SIZE = 6;
@@ -19,11 +20,17 @@ const int MOTOR_CPR = 1024;
 int MOTOR_OFFSET = 0;
 
 int MOTOR_LIMIT = MOTOR_CPR / 4;  // 180 deg of range
-int MOTOR_HYS = 32; // limit hysteresis TODO rad/deg 
+int MOTOR_HYS = 64; // limit hysteresis TODO rad/deg 
 
 const unsigned long COMMAND_TIMEOUT = 500;  // ms
 
 // Adafruit_AS5600 as5600;
+
+// tmp LED debug
+int Power = 11;
+int PIN  = 12;
+#define NUMPIXELS 1
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 
 int pModulo(int value, int modulus) {
@@ -37,13 +44,10 @@ bool timer_callback(struct repeating_timer *t) {
 }
 
 
-void setMotorDirection(bool direction) {
-  // TODO maybe check for limits here
-  if (direction) {
-    digitalWrite(DIR_PIN, LOW);
-  } else {
-    digitalWrite(DIR_PIN, HIGH);
-  }
+void setMotorDirection(bool direction) 
+{
+  if (direction == true) {digitalWrite(DIR_PIN, LOW);}
+  else if (direction == false) {digitalWrite(DIR_PIN, HIGH);}
 }
 
 
@@ -63,12 +67,31 @@ void processMotorCommand(float motor_command, bool direction) {
   add_repeating_timer_us(timer_interval, timer_callback, NULL, &timer);
 }
 
+void setLED(String color) {
+  pixels.clear();
+  pixels.setPixelColor(0, pixels.Color(0, 0, 0));
+  if (color == "red") {
+    pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+  }
+  else if (color == "green") {
+    pixels.setPixelColor(0, pixels.Color(0, 255, 0));
+  }
+  else if (color == "blue") {
+    pixels.setPixelColor(0, pixels.Color(0, 0, 255));
+  }
+  pixels.show();
+}
+
 
 void setup() {
   // setup motor pins TODO is this even needed on rp2040?
   pinMode(STEP_PIN, OUTPUT);
   pinMode(DIR_PIN, OUTPUT);
   pinMode(MOTOR_ENC, INPUT);
+
+  pixels.begin();
+  pinMode(Power,OUTPUT);
+  digitalWrite(Power, HIGH);
 
   MOTOR_OFFSET = analogRead(MOTOR_ENC);
 
@@ -101,7 +124,7 @@ volatile unsigned long lastCommandReceived = 0;
 
 // sanitized:
 volatile uint16_t motor_command;
-volatile bool direction = false; // true = CW, false = CCW
+volatile bool direction = false; // true = CCW, false = CW
 
 // user commanded
 volatile uint16_t user_motor_command;
@@ -113,9 +136,10 @@ volatile bool hitLimit = false;
 
 
 bool motorControllerCallback(struct repeating_timer *t) {
-  if (millis() - lastCommandReceived > COMMAND_TIMEOUT) {
-    processMotorCommand(0, true);  // kill motor
-  }
+  //if (millis() - lastCommandReceived > COMMAND_TIMEOUT) {
+  //  processMotorCommand(0, true);  // kill motor
+  //  return true;
+  //}
 
   motorEncoderValue = analogRead(MOTOR_ENC);                                 // TODO is actually 10 bits, switch to 16bits?
   motorEncoderValue = pModulo(motorEncoderValue - MOTOR_OFFSET, MOTOR_CPR);  // [0, CPR]
@@ -128,11 +152,10 @@ bool motorControllerCallback(struct repeating_timer *t) {
     } else {
       direction = true;
     }
-
   }
 
   float scaling_factor = 1;
-  bool outside_limits = (motorEncoderValue < (MOTOR_LIMIT - MOTOR_HYS) && motorEncoderValue > (MOTOR_CPR - MOTOR_LIMIT + MOTOR_HYS));
+  bool outside_limits = (motorEncoderValue < (MOTOR_LIMIT - MOTOR_HYS) || motorEncoderValue > (MOTOR_CPR - MOTOR_LIMIT + MOTOR_HYS));
 
   // hysteresis before unlocking direction
   if (outside_limits == true) {
@@ -141,17 +164,27 @@ bool motorControllerCallback(struct repeating_timer *t) {
   }
 
   // only update direction to user command if we did not hit limits, else sticky
-  if (hitLimit == false) { direction = user_direction; }
+  if (hitLimit == false) 
+  { 
+    direction = user_direction;
+  }
+  else if (user_direction != direction) { 
+    // if we hit the limit and the user still wants to go towards the limit, we make its command 0
+    processMotorCommand(0, direction);
+    return true;
+  }
 
   if (outside_limits == false) {
     // compute scaling factor, scale only towards the blocking side
-    if (motorEncoderValue > (MOTOR_LIMIT - MOTOR_HYS) && user_direction == false) // CCW
+    if (motorEncoderValue > (MOTOR_LIMIT - MOTOR_HYS) && user_direction == true) // CCW
     {
-      scaling_factor = (motorEncoderValue - (MOTOR_LIMIT - MOTOR_HYS))/MOTOR_HYS;
+      setLED("green");
+      scaling_factor = ((MOTOR_LIMIT - MOTOR_HYS)-motorEncoderValue)/MOTOR_HYS;
     }
     
-    if (motorEncoderValue < (MOTOR_LIMIT + MOTOR_HYS) && user_direction == true) // CW
+    if (motorEncoderValue < (MOTOR_LIMIT + MOTOR_HYS) && user_direction == false) // CW
     {
+      setLED("blue");
       scaling_factor = (motorEncoderValue - (MOTOR_LIMIT - MOTOR_HYS))/MOTOR_HYS;
     }
   }
@@ -184,7 +217,7 @@ void loop() {
       }
     } else if (command == STEP) {
       // read motor command into global variables, will be read by routine to actuate
-      bool user_direction = Serial.read();
+      user_direction = Serial.read();
       Serial.readBytes((char *)&user_motor_command, sizeof(user_motor_command));
 
       int32_t pendulumEncoderValue = 0;  // as5600.getRawAngle(); // is 12 bits
