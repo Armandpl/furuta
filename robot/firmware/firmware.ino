@@ -14,7 +14,7 @@ const int STEP_PIN = D0;
 const int DIR_PIN = D1;
 static struct repeating_timer timer; // tick timer
 const int MAX_DELAY_US = 100;  // toggle every 1ms = 1 rising every 2 ms = 500 steps/s = ~1RPS = slowest
-const int MIN_DELAY_US = 15;
+const int MIN_DELAY_US = 20;
 const int MOTOR_ENC = A2;  // read with analogWrite until we get AS5600 that has configurable address
 const int MOTOR_CPR = 1024;
 int MOTOR_OFFSET = 0;
