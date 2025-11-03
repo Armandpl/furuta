@@ -15,10 +15,8 @@ class FurutaReal(FurutaBase):
         reward="cos_alpha",
         angle_limits=None,
         speed_limits=None,
-        motor_stop_pid=[0.04, 0.0, 0.001],
     ):
         super().__init__(control_freq, reward, angle_limits, speed_limits)
-        self.motor_stop_pid = motor_stop_pid
 
         self.robot = robot
         self._state = None

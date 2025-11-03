@@ -41,7 +41,7 @@ def main(cfg: DictConfig):
 
     # setup env
     env = hydra.utils.instantiate(cfg.env, _recursive_=True)
-    check_env(env)
+    # check_env(env)
 
     # seed everything
     seed_everything(env, cfg.seed, cfg.cudnn_deterministic)

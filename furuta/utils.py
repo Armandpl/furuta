@@ -44,7 +44,8 @@ class VelocityFilter:
 
     def __call__(self, x):
         xd, self.z = signal.lfilter(self.b, self.a, x[None, :], 0, self.z)
-        return xd.ravel()
+        res = xd.ravel()
+        return res
 
 
 class Timing:

@@ -22,11 +22,11 @@ def exp_alpha_reward(state, exp=2):
 
 
 def alpha_theta_reward(state):
-    return alpha_reward(state) * theta_reward(state)
+    return alpha_reward(state) # * theta_reward(state)
 
 
 def alpha_reward(state):
-    return (1 + -np.cos(state[ALPHA])) / 2
+    return (1 + np.cos(state[ALPHA])) / 2
 
 
 def theta_reward(state):
