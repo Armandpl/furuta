@@ -66,6 +66,8 @@ class FurutaBase(gym.Env):
 
         self._reward_func = REWARDS[self.reward]
 
+        self.travel_budget = 6*np.pi
+
         act_max = np.array([1.0], dtype=np.float32)
 
         angle_limits = np.array(angle_limits, dtype=np.float32)
@@ -113,6 +115,15 @@ class FurutaBase(gym.Env):
             dtype=np.float32,
         )
 
+    def _compute_travel(self, alpha):
+      if not self.prev_alpha:
+        self.prev_alpha = alpha
+        return 0
+
+      a,b = self.prev_alpha, alpha
+      travel = min(abs(a-b), abs(b-a))
+      return travel
+
     def step(self, action):
         # first read the robot/sim state
         rwd = self._reward_func(self._state)
@@ -120,8 +131,10 @@ class FurutaBase(gym.Env):
 
         # then take action/step the sim
         self._update_state(action[0])
+        self.total_travel += self._compute_travel(self.state[ALPHA])
 
-        terminated = not self.state_space.contains(self._state)
+        # terminated = not self.state_space.contains(self._state)
+        terminated = self.total_travel > self.travel_budget
         truncated = False
 
         return obs, float(rwd), terminated, truncated, {}
@@ -150,6 +163,8 @@ class FurutaBase(gym.Env):
         options: Optional[dict] = None,
     ):
         super().reset(seed=seed, options=options)
+        self.total_travel = 0
+        self.prev_alpha = None
 
     def _update_state(self, a):
         raise NotImplementedError
