@@ -29,7 +29,7 @@ class FurutaReal(FurutaBase):
 
         # motor_angle: theta, pendulum angle: alpha
         pos = np.array([motor_angle, pendulum_angle], dtype=np.float32)
-        vel = self.vel_filt(pos)
+        vel = self.vel_filt(np.cos(pos))
         state = np.concatenate([pos, vel])
         self._state = state
 
