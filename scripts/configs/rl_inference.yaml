@@ -4,6 +4,6 @@ defaults:
   - wrappers: real_wrappers
 
 wandb_project: "furuta2"
-model_artifact: "model:v64"
+model_artifact: "model:v75"
 render: False
-nb_episodes: 3
+nb_episodes: 1

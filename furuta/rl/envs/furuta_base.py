@@ -22,7 +22,7 @@ def exp_alpha_reward(state, exp=2):
 
 
 def alpha_theta_reward(state):
-    return alpha_reward(state) # * theta_reward(state)
+    return alpha_reward(state)  # * theta_reward(state)
 
 
 def alpha_reward(state):
@@ -36,6 +36,7 @@ def theta_reward(state):
 
 
 REWARDS = {
+    "alpha": alpha_reward,
     "cos_alpha": alpha_theta_reward,
     "exp_alpha_2": lambda x: exp_alpha_theta_reward(x, exp=2),
     "exp_alpha_3": lambda x: exp_alpha_theta_reward(x, exp=3),
@@ -66,7 +67,7 @@ class FurutaBase(gym.Env):
 
         self._reward_func = REWARDS[self.reward]
 
-        self.travel_budget = 6*np.pi
+        self.travel_budget = 6 * np.pi
 
         act_max = np.array([1.0], dtype=np.float32)
 
@@ -116,13 +117,13 @@ class FurutaBase(gym.Env):
         )
 
     def _compute_travel(self, alpha):
-      if not self.prev_alpha:
-        self.prev_alpha = alpha
-        return 0
+        if not self.prev_alpha:
+            self.prev_alpha = alpha
+            return 0
 
-      a,b = self.prev_alpha, alpha
-      travel = min(abs(a-b), abs(b-a))
-      return travel
+        a, b = self.prev_alpha, alpha
+        travel = min(abs(a - b), abs(b - a))
+        return travel
 
     def step(self, action):
         # first read the robot/sim state

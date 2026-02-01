@@ -6,9 +6,9 @@ from typing import Optional, Union
 import gymnasium as gym
 import hydra
 import numpy as np
-import wandb
 from gymnasium.spaces import Box
 
+import wandb
 from furuta.logger import SimpleLogger
 from furuta.state import Signal, State
 from furuta.utils import ALPHA, ALPHA_DOT, THETA, THETA_DOT
@@ -69,6 +69,7 @@ class MCAPLogger(gym.Wrapper):
             self.log_dir = log_dir
         else:
             self.log_dir = Path(hydra.core.hydra_config.HydraConfig.get().runtime.output_dir)
+            print("Using log dir:", self.log_dir)
         self.use_sim_time = use_sim_time
 
         self.episodes = 0
