@@ -80,7 +80,7 @@ void setup() {
   as5600.setHysteresis(AS5600_HYSTERESIS_OFF);
   as5600.setSlowFilter(AS5600_SLOW_FILTER_16X);
   as5600.setFastFilterThresh(AS5600_FAST_FILTER_THRESH_SLOW_ONLY);
-  as5600.setZPosition(0);
+  as5600.setZPosition(as5600.getRawAngle());
   as5600.setMPosition(4095);
   as5600.setMaxAngle(4095);
 
@@ -193,7 +193,7 @@ void loop() {
       user_direction = Serial.read();
       Serial.readBytes((char *)&user_motor_command, sizeof(user_motor_command));
 
-      int32_t pendulumEncoderValue = as5600.getRawAngle(); // is 12 bits
+      int32_t pendulumEncoderValue = as5600.getAngle(); // is 12 bits
       unsigned long timestamp = micros();
 
       Serial.write((uint8_t *)&motorEncoderValue, sizeof(motorEncoderValue));
