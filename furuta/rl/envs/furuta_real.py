@@ -7,6 +7,22 @@ from furuta.robot import Robot
 from furuta.utils import VelocityFilter
 
 
+class LiveUnwrap:
+    def __init__(self):
+        self.prev_angle = None
+        self.offset = 0.0
+
+    def __call__(self, angle):
+        if self.prev_angle is not None:
+            diff = angle - self.prev_angle
+            if diff > np.pi:
+                self.offset -= 2 * np.pi
+            elif diff < -np.pi:
+                self.offset += 2 * np.pi
+        self.prev_angle = angle
+        return angle + self.offset
+
+
 class FurutaReal(FurutaBase):
     def __init__(
         self,
@@ -27,9 +43,11 @@ class FurutaReal(FurutaBase):
     def _update_state(self, action):
         motor_angle, pendulum_angle, _ = self.robot.step(action)
 
+        pendulum_angle = self.unwrap(pendulum_angle)
+
         # motor_angle: theta, pendulum angle: alpha
         pos = np.array([motor_angle, pendulum_angle], dtype=np.float32)
-        vel = self.vel_filt(np.cos(pos))
+        vel = self.vel_filt(pos)
         state = np.concatenate([pos, vel])
         self._state = state
 
@@ -42,6 +60,7 @@ class FurutaReal(FurutaBase):
         # else the first computed velocity will take into account previous episode
         # and it'll be huge and wrong and will terminate the episode
         self._init_vel_filt()
+        self.unwrap = LiveUnwrap()
         self._update_state(0.0)  # initial state
         return self.get_obs(), {}
 

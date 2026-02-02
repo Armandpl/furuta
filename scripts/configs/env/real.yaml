@@ -5,5 +5,5 @@ defaults:
 _target_: furuta.rl.envs.furuta_real.FurutaReal
 control_freq: 75
 reward: "alpha"
-angle_limits: [null, null]
+angle_limits: [null, 24]
 speed_limits: [null, null]
